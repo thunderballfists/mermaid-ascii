@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -50,6 +51,23 @@ type textSubgraph struct {
 }
 
 var nodeWithClassPattern = regexp.MustCompile(`^(.+):::(.+)$`)
+
+var supportedEdgeOperators = []string{"-->", "-.->", "-x->", "-o->"}
+
+var edgeOperatorPattern = func() string {
+	ops := make([]string, len(supportedEdgeOperators))
+	copy(ops, supportedEdgeOperators)
+	sort.SliceStable(ops, func(i, j int) bool {
+		return len(ops[i]) > len(ops[j])
+	})
+	for i, op := range ops {
+		ops[i] = regexp.QuoteMeta(op)
+	}
+	return strings.Join(ops, "|")
+}()
+
+var edgeWithLabelRegex = regexp.MustCompile(`^(.+)\s*(?:` + edgeOperatorPattern + `)\s*\|(.+)\|\s*(.+)$`)
+var edgeRegex = regexp.MustCompile(`^(.+)\s*(?:` + edgeOperatorPattern + `)\s*(.+)$`)
 
 type shapeDelimiter struct {
 	open  string
@@ -311,19 +329,7 @@ func (gp *graphProperties) parseString(line string) ([]textNode, error) {
 			},
 		},
 		{
-			regex: regexp.MustCompile(`^(.+)\s+-->\s+(.+)$`),
-			handler: func(match []string) ([]textNode, error) {
-				if lhs, err = gp.parseString(match[0]); err != nil {
-					lhs = []textNode{gp.parseNode(match[0])}
-				}
-				if rhs, err = gp.parseString(match[1]); err != nil {
-					rhs = []textNode{gp.parseNode(match[1])}
-				}
-				return setArrow(lhs, rhs, gp.data), nil
-			},
-		},
-		{
-			regex: regexp.MustCompile(`^(.+)\s+-->\|(.+)\|\s+(.+)$`),
+			regex: edgeWithLabelRegex,
 			handler: func(match []string) ([]textNode, error) {
 				if lhs, err = gp.parseString(match[0]); err != nil {
 					lhs = []textNode{gp.parseNode(match[0])}
@@ -332,6 +338,18 @@ func (gp *graphProperties) parseString(line string) ([]textNode, error) {
 					rhs = []textNode{gp.parseNode(match[2])}
 				}
 				return setArrowWithLabel(lhs, rhs, match[1], gp.data), nil
+			},
+		},
+		{
+			regex: edgeRegex,
+			handler: func(match []string) ([]textNode, error) {
+				if lhs, err = gp.parseString(match[0]); err != nil {
+					lhs = []textNode{gp.parseNode(match[0])}
+				}
+				if rhs, err = gp.parseString(match[1]); err != nil {
+					rhs = []textNode{gp.parseNode(match[1])}
+				}
+				return setArrow(lhs, rhs, gp.data), nil
 			},
 		},
 		{
