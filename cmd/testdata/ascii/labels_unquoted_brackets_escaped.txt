@@ -1,0 +1,8 @@
+graph LR
+A[Text with \] bracket] --> B(Label with \) paren)
+---
++---------------------+     +--------------------+
+|                     |     |                    |
+| Text with ] bracket |---->| Label with ) paren |
+|                     |     |                    |
++---------------------+     +--------------------+

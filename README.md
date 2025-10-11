@@ -1,6 +1,24 @@
 # Mermaid ASCII
 
-Render mermaid diagrams in your terminal:
+Render mermaid diagrams in your terminal.
+
+## Quick start
+
+Clone the repository and use the Go toolchain (or the provided `Makefile`) to build the CLI:
+
+```bash
+git clone https://github.com/AlexanderGrooff/mermaid-ascii.git
+cd mermaid-ascii
+# build the binary
+go build
+# or, using the Makefile
+make mermaid-ascii
+
+# run the renderer
+./mermaid-ascii --help
+```
+
+The project ships with Go unit tests that can be executed with `go test ./...`.
 
 ## Installation
 

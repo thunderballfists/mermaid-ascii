@@ -151,7 +151,7 @@ func (d *drawing) drawLine(from drawingCoord, to drawingCoord, offsetFrom int, o
 }
 
 func drawMap(properties *graphProperties) string {
-	g := mkGraph(properties.data)
+	g := mkGraph(properties)
 	g.setStyleClasses(properties)
 	g.paddingX = properties.paddingX
 	g.paddingY = properties.paddingY
@@ -229,9 +229,9 @@ func drawBox(n *node, g graph) *drawing {
 	}
 	// Draw text
 	textY := from.y + h/2
-	textX := from.x + w/2 - CeilDiv(len(n.name), 2) + 1
-	for x := 0; x < len(n.name); x++ {
-		boxDrawing[textX+x][textY] = wrapTextInColor(string(n.name[x]), n.styleClass.styles["color"], g.styleType)
+	textX := from.x + w/2 - CeilDiv(len(n.label), 2) + 1
+	for x := 0; x < len(n.label); x++ {
+		boxDrawing[textX+x][textY] = wrapTextInColor(string(n.label[x]), n.styleClass.styles["color"], g.styleType)
 	}
 
 	return &boxDrawing
