@@ -3,7 +3,6 @@ package cmd
 import (
 	"errors"
 
-	"github.com/elliotchance/orderedmap/v2"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -57,30 +56,43 @@ type subgraph struct {
 	maxY int
 }
 
-func mkGraph(data *orderedmap.OrderedMap[string, []textEdge]) graph {
+func mkGraph(properties *graphProperties) graph {
 	g := graph{drawing: mkDrawing(0, 0)}
 	g.grid = make(map[gridCoord]*node)
 	g.columnWidth = make(map[int]int)
 	g.rowHeight = make(map[int]int)
 	g.styleClasses = make(map[string]styleClass)
 	index := 0
-	for el := data.Front(); el != nil; el = el.Next() {
+	for el := properties.data.Front(); el != nil; el = el.Next() {
 		nodeName := el.Key
 		children := el.Value
+		nodeDefinition := properties.getOrCreateNodeDefinition(nodeName)
 		// Get or create parent node
 		parentNode, err := g.getNode(nodeName)
 		if err != nil {
-			parentNode = &node{name: nodeName, index: index, styleClassName: ""}
+			parentNode = &node{name: nodeName, label: nodeDefinition.label, shape: nodeDefinition.shape, index: index, styleClassName: ""}
 			g.appendNode(parentNode)
 			index += 1
+		} else {
+			parentNode.label = nodeDefinition.label
+			parentNode.shape = nodeDefinition.shape
 		}
 		for _, textEdge := range children {
-			childNode, err := g.getNode(textEdge.child.name)
+			childDefinition := properties.getOrCreateNodeDefinition(textEdge.child.id)
+			childNode, err := g.getNode(textEdge.child.id)
 			if err != nil {
-				childNode = &node{name: textEdge.child.name, index: index, styleClassName: textEdge.child.styleClass}
-				parentNode.styleClassName = textEdge.parent.styleClass
+				childNode = &node{name: textEdge.child.id, label: childDefinition.label, shape: childDefinition.shape, index: index, styleClassName: textEdge.child.styleClass}
 				g.appendNode(childNode)
 				index += 1
+			} else {
+				childNode.label = childDefinition.label
+				childNode.shape = childDefinition.shape
+				if textEdge.child.styleClass != "" {
+					childNode.styleClassName = textEdge.child.styleClass
+				}
+			}
+			if textEdge.parent.styleClass != "" {
+				parentNode.styleClassName = textEdge.parent.styleClass
 			}
 			e := edge{from: parentNode, to: childNode, text: textEdge.label}
 			g.edges = append(g.edges, &e)
