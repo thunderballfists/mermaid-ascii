@@ -15,6 +15,11 @@ type edge struct {
 	labelLine []gridCoord
 	startDir  direction
 	endDir    direction
+	style     arrowBodyStyle
+	arrowDir  arrowDirection
+	leftCap   arrowEndCap
+	rightCap  arrowEndCap
+	lenHint   int
 }
 
 func (g *graph) determinePath(e *edge) {
