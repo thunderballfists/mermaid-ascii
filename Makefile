@@ -1,4 +1,8 @@
 PREFIX ?= /usr/local/bin
+GOCACHE ?= $(PWD)/.cache/go-build
+GOMODCACHE ?= $(HOME)/go/pkg/mod
+TINYGO_CACHE ?= $(PWD)/.cache/tinygo
+TINYGOROOT := $(shell tinygo env TINYGOROOT)
 
 mermaid-ascii: cmd/*.go
 	go build
@@ -23,13 +27,19 @@ dev:
 # --------
 # WebAssembly
 # --------
+.PHONY: wasm
 wasm:
-	tinygo build -o dist/main.wasm -target wasm ./wasm
-	cp "$$(tinygo env TINYGOROOT)/targets/wasm_exec.js" dist/
+	mkdir -p dist $(GOCACHE) $(TINYGO_CACHE)
+	GOCACHE=$(GOCACHE) GOMODCACHE=$(GOMODCACHE) TINYGO_CACHE=$(TINYGO_CACHE) tinygo build -o dist/main.wasm -target wasm ./wasm
+	cp "$(TINYGOROOT)/targets/wasm_exec.js" dist/
 	cp -r site/* dist/ || true
 	touch dist/.nojekyll
 
-serve:
+.PHONY: serve
+serve: wasm
 	cd dist && python3 -m http.server 5173
+
+.PHONY: test
 test:
-	go test ./...
+	mkdir -p $(GOCACHE)
+	GOCACHE=$(GOCACHE) go test ./...
