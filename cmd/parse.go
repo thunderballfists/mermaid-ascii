@@ -34,6 +34,7 @@ type textEdge struct {
 	label         string
 	labelNearHead bool
 	style         arrowBodyStyle
+	edgeStyle     EdgeStyle
 	arrowDir      arrowDirection
 	leftCap       arrowEndCap
 	rightCap      arrowEndCap
@@ -72,6 +73,7 @@ type edgeSpec struct {
 	label     string
 	nearHead  bool
 	style     arrowBodyStyle
+	edgeStyle EdgeStyle
 	direction arrowDirection
 	leftCap   arrowEndCap
 	rightCap  arrowEndCap
@@ -192,6 +194,10 @@ func buildEdgeSpec(lhs, rhs, operator, label string, nearHead bool) edgeSpec {
 	rhs = strings.TrimSpace(rhs)
 	operator = strings.TrimSpace(operator)
 	style, direction, leftCap, rightCap, lenHint := classifyEdgeOperator(operator)
+	edgeStyle := StyleSolid
+	if strings.Contains(operator, "=") {
+		edgeStyle = StyleThick
+	}
 	return edgeSpec{
 		lhs:       lhs,
 		rhs:       rhs,
@@ -199,6 +205,7 @@ func buildEdgeSpec(lhs, rhs, operator, label string, nearHead bool) edgeSpec {
 		label:     label,
 		nearHead:  nearHead,
 		style:     style,
+		edgeStyle: edgeStyle,
 		direction: direction,
 		leftCap:   leftCap,
 		rightCap:  rightCap,
@@ -504,6 +511,7 @@ func setArrowWithSpec(lhs, rhs []textNode, spec edgeSpec, data *orderedmap.Order
 				label:         spec.label,
 				labelNearHead: spec.nearHead,
 				style:         spec.style,
+				edgeStyle:     spec.edgeStyle,
 				arrowDir:      spec.direction,
 				leftCap:       spec.leftCap,
 				rightCap:      spec.rightCap,

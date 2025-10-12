@@ -16,6 +16,13 @@ const (
 	arrowStyleThick
 )
 
+type EdgeStyle int
+
+const (
+	StyleSolid EdgeStyle = iota
+	StyleThick
+)
+
 type arrowDirection int
 
 const (
@@ -136,7 +143,7 @@ func (g *graph) drawArrow(from gridCoord, to gridCoord, e *edge) (*drawing, *dra
 	}
 	log.Debugf("Drawing arrow from %v to %v with path %v", from, to, e.path)
 	dLabel := g.drawArrowLabel(e)
-	dPath, linesDrawn, lineDirs := g.drawPath(e.path)
+	dPath, linesDrawn, lineDirs := g.drawPath(e.path, e.edgeStyle)
 	if !useAscii {
 		g.applyArrowBodyStyle(dPath, linesDrawn, lineDirs, e, dLabel)
 	}
@@ -176,7 +183,7 @@ func mergePath(path []gridCoord) []gridCoord {
 	return newPath
 }
 
-func (g *graph) drawPath(path []gridCoord) (*drawing, [][]drawingCoord, []direction) {
+func (g *graph) drawPath(path []gridCoord, edgeStyle EdgeStyle) (*drawing, [][]drawingCoord, []direction) {
 	d := copyCanvas(g.drawing)
 	previousCoord := path[0]
 	linesDrawn := make([][]drawingCoord, 0)
@@ -190,7 +197,7 @@ func (g *graph) drawPath(path []gridCoord) (*drawing, [][]drawingCoord, []direct
 			continue
 		}
 		dir := determineDirection(genericCoord(previousCoord), genericCoord(nextCoord))
-		s := d.drawLine(previousDrawingCoord, nextDrawingCoord, 1, -1)
+		s := d.drawLine(previousDrawingCoord, nextDrawingCoord, 1, -1, edgeStyle)
 		if len(s) == 0 {
 			// drawLine may return no coords if offsets collapse the line. Use at least one point so arrow and junction logic
 			// can still infer a direction.
