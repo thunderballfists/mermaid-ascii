@@ -16,6 +16,7 @@ type edge struct {
 	startDir  direction
 	endDir    direction
 	style     arrowBodyStyle
+	edgeStyle EdgeStyle
 	arrowDir  arrowDirection
 	leftCap   arrowEndCap
 	rightCap  arrowEndCap

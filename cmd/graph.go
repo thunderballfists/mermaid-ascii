@@ -95,15 +95,16 @@ func mkGraph(properties *graphProperties) graph {
 				parentNode.styleClassName = textEdge.parent.styleClass
 			}
 			e := edge{
-				from:     parentNode,
-				to:       childNode,
-				text:     textEdge.label,
-				nearHead: textEdge.labelNearHead,
-				style:    textEdge.style,
-				arrowDir: textEdge.arrowDir,
-				leftCap:  textEdge.leftCap,
-				rightCap: textEdge.rightCap,
-				lenHint:  textEdge.lenHint,
+				from:      parentNode,
+				to:        childNode,
+				text:      textEdge.label,
+				nearHead:  textEdge.labelNearHead,
+				style:     textEdge.style,
+				edgeStyle: textEdge.edgeStyle,
+				arrowDir:  textEdge.arrowDir,
+				leftCap:   textEdge.leftCap,
+				rightCap:  textEdge.rightCap,
+				lenHint:   textEdge.lenHint,
 			}
 			g.edges = append(g.edges, &e)
 		}

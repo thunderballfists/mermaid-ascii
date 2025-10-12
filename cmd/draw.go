@@ -55,7 +55,7 @@ func (d *drawing) drawText(start drawingCoord, text string) {
 	}
 }
 
-func (d *drawing) drawLine(from drawingCoord, to drawingCoord, offsetFrom int, offsetTo int) []drawingCoord {
+func (d *drawing) drawLine(from drawingCoord, to drawingCoord, offsetFrom int, offsetTo int, edgeStyle EdgeStyle) []drawingCoord {
 	// Offset determines how far from the actual coord the line should start/stop.
 	direction := determineDirection(genericCoord(from), genericCoord(to))
 	drawnCoords := make([]drawingCoord, 0)
@@ -116,14 +116,22 @@ func (d *drawing) drawLine(from drawingCoord, to drawingCoord, offsetFrom int, o
 				(*d)[from.x][y] = "|"
 			}
 		case Left:
+			horizChar := "-"
+			if edgeStyle == StyleThick {
+				horizChar = "="
+			}
 			for x := from.x - offsetFrom; x >= to.x-offsetTo; x-- {
 				drawnCoords = append(drawnCoords, drawingCoord{x, from.y})
-				(*d)[x][from.y] = "-"
+				(*d)[x][from.y] = horizChar
 			}
 		case Right:
+			horizChar := "-"
+			if edgeStyle == StyleThick {
+				horizChar = "="
+			}
 			for x := from.x + offsetFrom; x <= to.x+offsetTo; x++ {
 				drawnCoords = append(drawnCoords, drawingCoord{x, from.y})
-				(*d)[x][from.y] = "-"
+				(*d)[x][from.y] = horizChar
 			}
 		case UpperLeft:
 			for x, y := from.x, from.y-offsetFrom; x >= to.x-offsetTo && y >= to.y-offsetTo; x, y = x-1, y-1 {
