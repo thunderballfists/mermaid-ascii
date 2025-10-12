@@ -363,15 +363,28 @@ func (d *drawing) drawTextOnLine(line []drawingCoord, label string, nearHead boo
 		rightLen := available - leftLen
 
 		if nearHead {
-			if line[1].x > line[0].x {
-				if rightLen > 1 {
-					rightLen--
-					leftLen++
+			if line[1].x != line[0].x {
+				biased := available * 4 / 5
+				if biased >= available {
+					biased = available - 1
 				}
-			} else if line[1].x < line[0].x {
-				if leftLen > 1 {
-					leftLen--
-					rightLen++
+				if biased <= 0 {
+					biased = 1
+				}
+				if line[1].x > line[0].x {
+					leftLen = biased
+					rightLen = available - leftLen
+				} else {
+					rightLen = biased
+					leftLen = available - rightLen
+				}
+				if leftLen < 1 {
+					leftLen = 1
+					rightLen = available - leftLen
+				}
+				if rightLen < 1 {
+					rightLen = 1
+					leftLen = available - rightLen
 				}
 			}
 		} else {
