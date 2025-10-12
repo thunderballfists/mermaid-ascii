@@ -1,28 +1,27 @@
-# AGENTS.md
-
-This repository uses automated coding agents. Follow the rules below for **every change**.
-
-## Testing Policy (must-read)
-
 ---
 alwaysApply: true
 ---
-For **every change you make**, ensure that you add tests for the new functionality. Test coverage is non-negotiable!
-Run tests locally by running `go test ./...` in the root directory. This is fast, and should be done regularly.
+# Project: mermaid-ascii — WASM demo & UI
 
-Tests are added through the `testdata/ascii` directory. The file name should be the name of the test case, and the file should contain the mermaid code to test.
-The first section of the file should be the mermaid code to test, and the second section should be the expected output.
-The sections are separated by a line that contains only `---`.
+## Hard Rules
+- For every change, add/adjust tests; `go test ./...` must pass.
+- Keep ASCII outputs byte-for-byte unchanged.
+- Extended/Unicode changes affect `useAscii=false` only.
+- Small diffs; commit after each passing milestone.
 
-For example, if you add a new feature that allows you to add a comment to a node, you should add a new file to the `testdata/ascii` directory called `comments.txt` with the following content:
+## Build & Test
+- Unit tests: `go test ./...`
+- WASM: `tinygo build -o dist/main.wasm -target wasm ./wasm`
+- Dev site: copy `site/*` → `dist/`, copy `wasm_exec.js`, then `python3 -m http.server` in `dist/`.
 
-```mermaid
-graph LR
-A --> B
-%% This is a comment
----
-+---+      +---+
-|   |      |   |
-| A | ---> | B |
-|   |      |   |
-+---+      +---+
+## Target Layout
+- pkg/lib/…        (Render API)
+- wasm/…           (TinyGo wrapper; exports `mermaidAsciiRender`)
+- site/{index.html,styles.css,app.js,examples.js,worker.js}
+- dist/            (build output)
+- .github/workflows/pages.yml  (Pages CI)
+
+## DoD
+- `go test ./...` green.
+- `make wasm && make serve` (or commands above) yields a working demo.
+- CI builds and deploys to Pages.

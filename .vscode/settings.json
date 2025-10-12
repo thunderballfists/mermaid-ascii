@@ -1,0 +1,8 @@
+{
+  "go.toolsEnvVars": {
+    "GOOS": "js",
+    "GOARCH": "wasm",
+    "GOROOT": "/Users/abeihl/Library/Caches/tinygo/goroot-175d5de9be2616bcc5dc1f32541f606b4a686553dbe0011dfb07c53ce52d8731",
+    "GOFLAGS": "-tags=tinygo.wasm,tinygo,purego,osusergo,math_big_pure_go,gc.precise,scheduler.asyncify,serial.none,tinygo.unicore"
+  }
+}

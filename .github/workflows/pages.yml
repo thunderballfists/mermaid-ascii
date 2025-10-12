@@ -1,0 +1,50 @@
+name: Build & Deploy WASM demo
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup TinyGo
+        uses: acifani/setup-tinygo@v2
+        with:
+          tinygo-version: '0.31.0'   # pin your preferred version
+
+      - name: Build WASM
+        run: |
+          mkdir -p dist
+          tinygo build -o dist/main.wasm -target wasm ./wasm
+          cp "$(tinygo env TINYGOROOT)/targets/wasm_exec.js" dist/
+          cp -r site/* dist/
+          touch dist/.nojekyll
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
