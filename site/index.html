@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mermaid ASCII Renderer</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Mermaid ASCII Renderer</h1>
+    </header>
+    <main class="layout">
+      <section class="panel">
+        <label class="panel-label" for="mermaid-input">Mermaid Source</label>
+        <textarea
+          id="mermaid-input"
+          spellcheck="false"
+          aria-describedby="status-message"
+        ></textarea>
+      </section>
+      <section class="panel">
+        <div class="controls">
+          <label class="control">
+            <input type="checkbox" id="extended-toggle" />
+            Use extended characters
+          </label>
+          <label class="control">
+            Padding X
+            <input type="number" id="padding-x" min="0" step="1" />
+          </label>
+          <label class="control">
+            Padding Y
+            <input type="number" id="padding-y" min="0" step="1" />
+          </label>
+        </div>
+        <div class="actions">
+          <button id="render-btn" type="button" disabled>Render</button>
+          <button id="clear-btn" type="button">Clear</button>
+          <button id="copy-btn" type="button" disabled>Copy</button>
+          <button id="download-btn" type="button" disabled>Download</button>
+        </div>
+      </section>
+      <section class="panel">
+        <label class="panel-label" for="render-output">Output</label>
+        <pre id="render-output" tabindex="0"></pre>
+      </section>
+    </main>
+    <p id="status-message" class="status" role="status" aria-live="polite"></p>
+    <script src="wasm_exec.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
