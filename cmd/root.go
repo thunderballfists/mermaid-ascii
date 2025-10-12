@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/AlexanderGrooff/mermaid-ascii/pkg/lib"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -48,11 +49,15 @@ var rootCmd = &cobra.Command{
 			}
 		}
 
-		properties, err := mermaidFileToMap(string(mermaid), "cli")
-		if err != nil {
-			log.Fatal("Failed to parse mermaid input: ", err)
+		paddingX := paddingBetweenX
+		paddingY := paddingBetweenY
+		if _, err := lib.Render(string(mermaid), lib.Options{
+			UseASCII: useAscii,
+			PaddingX: &paddingX,
+			PaddingY: &paddingY,
+		}); err != nil {
+			log.Fatal("Failed to render mermaid input: ", err)
 		}
-		drawMap(properties)
 	},
 }
 
@@ -80,4 +85,33 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.Flags().StringP("file", "f", "", "Mermaid file to parse (use '-' for stdin)")
+
+	lib.RegisterRenderer(renderMermaidWithOptions)
+}
+
+func renderMermaidWithOptions(mermaid string, opts lib.Options) (string, error) {
+	originalUseASCII := useAscii
+	originalPaddingX := paddingBetweenX
+	originalPaddingY := paddingBetweenY
+	defer func() {
+		useAscii = originalUseASCII
+		paddingBetweenX = originalPaddingX
+		paddingBetweenY = originalPaddingY
+	}()
+
+	useAscii = opts.UseASCII
+	if opts.PaddingX != nil {
+		paddingBetweenX = *opts.PaddingX
+	}
+	if opts.PaddingY != nil {
+		paddingBetweenY = *opts.PaddingY
+	}
+
+	properties, err := mermaidFileToMap(mermaid, "cli")
+	if err != nil {
+		return "", err
+	}
+
+	result := drawMap(properties)
+	return result, nil
 }
