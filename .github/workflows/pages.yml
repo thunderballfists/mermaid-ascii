@@ -2,7 +2,7 @@ name: Build & Deploy WASM demo
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   workflow_dispatch:
 
 permissions:
@@ -24,7 +24,7 @@ jobs:
       - name: Setup TinyGo
         uses: acifani/setup-tinygo@v2
         with:
-          tinygo-version: '0.31.0'   # pin your preferred version
+          tinygo-version: '0.39.0'
 
       - name: Build WASM
         run: |
