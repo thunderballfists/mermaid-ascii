@@ -16,11 +16,23 @@
 
   const SAMPLE_MERMAID = "graph LR\nA-->B";
   const DEFAULT_PADDING = 5;
+  const DEBOUNCE_MS = 300;
+
   const state = {
-    go: null,
+    useWorker: true,
+    worker: null,
+    workerInit: null,
+    workerReady: false,
+    workerResolve: null,
+    workerReject: null,
+    directInit: null,
     renderFn: null,
+    go: null,
     ready: false,
+    lastDispatchId: 0,
   };
+
+  let debounceTimer = null;
 
   const URL_KEYS = {
     mermaid: "m",
@@ -191,9 +203,148 @@
     });
   }
 
-  async function loadWasm() {
-    setStatus("Loading renderer…");
+  function normalizeResponse(response) {
+    if (typeof response === "string") {
+      return { text: response };
+    }
+    if (response && typeof response === "object") {
+      if ("error" in response) {
+        return { error: response.error || "Unknown error" };
+      }
+      if (typeof response.text === "string") {
+        return { text: response.text };
+      }
+    }
+    return { text: "" };
+  }
+
+  function processRenderResult(id, payload) {
+    if (id < state.lastDispatchId) {
+      return;
+    }
+    if (payload && payload.error) {
+      updateOutput(payload.error, true);
+      setStatus("Render failed.", "error");
+      syncURLFromForm();
+      return;
+    }
+    const text = (payload && payload.text) || "";
+    updateOutput(text, false);
+    setStatus("Render complete.", "success");
+    syncURLFromForm();
+  }
+
+  function processWorkerResponse(data) {
+    if (typeof data.id !== "number") {
+      return;
+    }
+    if (data.id < state.lastDispatchId) {
+      return;
+    }
+    if (data.type === "error") {
+      processRenderResult(data.id, { error: data.error || "Unknown error" });
+    } else {
+      processRenderResult(data.id, { text: data.text || "" });
+    }
+  }
+
+  function tearDownWorker() {
+    if (state.worker) {
+      state.worker.terminate();
+      state.worker = null;
+    }
+    state.workerInit = null;
+    state.workerReady = false;
+  }
+
+  function handleWorkerMessage(event) {
+    const data = event.data || {};
+    switch (data.type) {
+      case "ready":
+        state.workerReady = true;
+        state.ready = true;
+        elements.renderBtn.disabled = false;
+        setStatus("Renderer ready.", "success");
+        if (state.workerResolve) {
+          state.workerResolve();
+          state.workerResolve = null;
+        }
+        scheduleRender(true);
+        break;
+      case "fatal":
+        if (state.workerReject) {
+          state.workerReject(new Error(data.error || "Worker failed"));
+          state.workerReject = null;
+        }
+        tearDownWorker();
+        state.useWorker = false;
+        state.ready = false;
+        setStatus(`Renderer failed: ${data.error || "Unknown error"}`, "error");
+        loadRendererDirect().catch((err) => {
+          setStatus(`Failed to load renderer: ${err.message}`, "error");
+        });
+        break;
+      case "result":
+      case "error":
+        processWorkerResponse(data);
+        break;
+      default:
+        break;
+    }
+  }
+
+  function handleWorkerError(event) {
+    const message =
+      event.message || (event.error && event.error.message) || "worker error";
+    if (state.workerReject) {
+      state.workerReject(new Error(message));
+      state.workerReject = null;
+    }
+    tearDownWorker();
+    state.useWorker = false;
+    state.ready = false;
+    setStatus(`Worker error: ${message}`, "error");
+    loadRendererDirect().catch((err) => {
+      setStatus(`Failed to load renderer: ${err.message}`, "error");
+    });
+  }
+
+  function loadRendererViaWorker() {
+    if (state.workerInit) {
+      return state.workerInit;
+    }
+    if (typeof Worker === "undefined") {
+      state.useWorker = false;
+      return loadRendererDirect();
+    }
     try {
+      state.worker = new Worker("worker.js");
+    } catch (err) {
+      state.useWorker = false;
+      setStatus(`Worker failed: ${err.message}`, "error");
+      return loadRendererDirect();
+    }
+    state.useWorker = true;
+    setStatus("Loading renderer…");
+    state.workerInit = new Promise((resolve, reject) => {
+      state.workerResolve = resolve;
+      state.workerReject = reject;
+    });
+    state.worker.addEventListener("message", handleWorkerMessage);
+    state.worker.addEventListener("error", handleWorkerError);
+    return state.workerInit;
+  }
+
+  function loadRendererDirect() {
+    if (state.directInit) {
+      return state.directInit;
+    }
+    if (typeof Go === "undefined") {
+      return Promise.reject(new Error("Go runtime unavailable"));
+    }
+    state.useWorker = false;
+    state.directInit = (async () => {
+      setStatus("Loading renderer…");
       state.go = new Go();
       let instance;
 
@@ -231,39 +382,71 @@
       state.ready = true;
       elements.renderBtn.disabled = false;
       setStatus("Renderer ready.", "success");
-      await render();
+      scheduleRender(true);
+    })();
+    return state.directInit;
+  }
+
+  async function ensureRenderer() {
+    if (state.ready) {
+      return;
+    }
+    if (state.useWorker) {
+      await loadRendererViaWorker();
+      return;
+    }
+    await loadRendererDirect();
+  }
+
+  async function performRender() {
+    try {
+      await ensureRenderer();
     } catch (err) {
-      console.error(err);
-      elements.renderBtn.disabled = true;
-      setStatus(`Failed to load renderer: ${err.message}`, "error");
+      updateOutput(err.message || String(err), true);
+      setStatus("Render failed.", "error");
+      return;
+    }
+
+    const mermaid = elements.input.value;
+    const options = getOptions();
+
+    if (state.useWorker && state.workerReady && state.worker) {
+      const requestId = ++state.lastDispatchId;
+      state.worker.postMessage({
+        type: "render",
+        id: requestId,
+        mermaid,
+        options,
+      });
+      setStatus("Rendering…");
+      return;
+    }
+
+    if (typeof state.renderFn === "function") {
+      const requestId = ++state.lastDispatchId;
+      try {
+        setStatus("Rendering…");
+        const response = state.renderFn(mermaid, JSON.stringify(options));
+        processRenderResult(requestId, normalizeResponse(response));
+      } catch (err) {
+        processRenderResult(requestId, { error: err.message || String(err) });
+      }
     }
   }
 
-  async function render() {
-    if (!state.ready || typeof state.renderFn !== "function") {
+  function scheduleRender(immediate = false) {
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+    const invoke = () => {
+      debounceTimer = null;
+      void performRender();
+    };
+    if (immediate) {
+      invoke();
       return;
     }
-    const mermaid = elements.input.value;
-    const payload = JSON.stringify(getOptions());
-    const response = state.renderFn(mermaid, payload);
-
-    if (response && typeof response === "object" && "error" in response) {
-      updateOutput(response.error || "Unknown error", true);
-      setStatus("Render failed.", "error");
-      syncURLFromForm();
-      return;
-    }
-
-    let text = "";
-    if (typeof response === "string") {
-      text = response;
-    } else if (response && typeof response === "object") {
-      text = response.text || "";
-    }
-
-    updateOutput(text, false);
-    setStatus("Render complete.", "success");
-    syncURLFromForm();
+    debounceTimer = setTimeout(invoke, DEBOUNCE_MS);
   }
 
   function clearAll() {
@@ -280,6 +463,7 @@
     updateOutput("", false);
     setStatus("Cleared.");
     syncURLFromForm();
+    scheduleRender(true);
   }
 
   async function copyOutput() {
@@ -313,31 +497,43 @@
     setStatus("Download started.", "success");
   }
 
+  function handleExampleChange() {
+    const selected = elements.exampleSelect.value;
+    const examples = Array.isArray(window.MERMAID_ASCII_EXAMPLES)
+      ? window.MERMAID_ASCII_EXAMPLES
+      : [];
+    const idx = parseInt(selected, 10);
+    if (!Number.isNaN(idx) && examples[idx]) {
+      elements.input.value = examples[idx].mermaid;
+      scheduleRender(true);
+    }
+  }
+
   function attachEvents() {
-    elements.renderBtn.addEventListener("click", render);
+    elements.renderBtn.addEventListener("click", () => scheduleRender(true));
     elements.clearBtn.addEventListener("click", clearAll);
     elements.copyBtn.addEventListener("click", copyOutput);
     elements.downloadBtn.addEventListener("click", downloadOutput);
-    if (elements.exampleSelect) {
-      elements.exampleSelect.addEventListener("change", () => {
-        const selected = elements.exampleSelect.value;
-        const examples = Array.isArray(window.MERMAID_ASCII_EXAMPLES)
-          ? window.MERMAID_ASCII_EXAMPLES
-          : [];
-        const idx = parseInt(selected, 10);
-        if (!Number.isNaN(idx) && examples[idx]) {
-          elements.input.value = examples[idx].mermaid;
-          render();
-        }
-      });
+
+    elements.input.addEventListener("input", () => scheduleRender());
+
+    [elements.paddingX, elements.paddingY].forEach((el) => {
+      if (el) {
+        el.addEventListener("input", () => scheduleRender());
+      }
+    });
+
+    if (elements.extended) {
+      elements.extended.addEventListener("change", () => scheduleRender());
     }
-    [elements.extended, elements.paddingX, elements.paddingY, elements.heads]
-      .filter(Boolean)
-      .forEach((el) => {
-        el.addEventListener("change", () => {
-          syncURLFromForm();
-        });
-      });
+
+    if (elements.heads) {
+      elements.heads.addEventListener("change", () => scheduleRender(true));
+    }
+
+    if (elements.exampleSelect) {
+      elements.exampleSelect.addEventListener("change", handleExampleChange);
+    }
   }
 
   document.addEventListener("DOMContentLoaded", () => {
@@ -353,7 +549,12 @@
       applyStateToForm(initialState);
     }
     attachEvents();
-    loadWasm();
+    loadRendererViaWorker();
+    ensureRenderer()
+      .then(() => scheduleRender(true))
+      .catch((err) => {
+        setStatus(`Failed to load renderer: ${err.message}`, "error");
+      });
   });
 
   if (typeof window !== "undefined") {
