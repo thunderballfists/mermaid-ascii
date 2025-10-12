@@ -3,14 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
     <title>Mermaid ASCII Renderer</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <a class="skip-link" href="#mermaid-input">Skip to editor</a>
     <header class="app-header">
       <h1>Mermaid ASCII Renderer</h1>
     </header>
-    <main class="layout">
+    <main class="layout" role="main">
       <section class="panel">
         <label class="panel-label" for="mermaid-input">Mermaid Source</label>
         <textarea
@@ -49,15 +51,38 @@
           </label>
         </div>
         <div class="actions">
-          <button id="render-btn" type="button" disabled>Render</button>
+          <button
+            id="render-btn"
+            type="button"
+            disabled
+            aria-keyshortcuts="Control+Enter Meta+Enter"
+            title="Render (Ctrl/Cmd+Enter)"
+          >
+            Render
+          </button>
           <button id="clear-btn" type="button">Clear</button>
-          <button id="copy-btn" type="button" disabled>Copy</button>
-          <button id="download-btn" type="button" disabled>Download</button>
+          <button id="copy-btn" type="button" disabled title="Copy output">
+            Copy
+          </button>
+          <button
+            id="download-btn"
+            type="button"
+            disabled
+            aria-keyshortcuts="Control+S Meta+S"
+            title="Download (Ctrl/Cmd+S)"
+          >
+            Download
+          </button>
         </div>
       </section>
       <section class="panel">
         <label class="panel-label" for="render-output">Output</label>
-        <pre id="render-output" tabindex="0"></pre>
+        <pre
+          id="render-output"
+          tabindex="0"
+          aria-label="Rendered output"
+          role="region"
+        ></pre>
       </section>
     </main>
     <p id="status-message" class="status" role="status" aria-live="polite"></p>

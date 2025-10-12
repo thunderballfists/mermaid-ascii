@@ -45,6 +45,11 @@
   function setStatus(message, tone) {
     elements.status.textContent = message || "";
     elements.status.classList.remove("status--error", "status--success");
+    elements.status.dataset.tone = tone || "neutral";
+    elements.status.setAttribute(
+      "aria-live",
+      tone === "error" ? "assertive" : "polite"
+    );
     if (tone === "error") {
       elements.status.classList.add("status--error");
     } else if (tone === "success") {
@@ -203,6 +208,13 @@
     });
   }
 
+  function focusEditor(selectText = false) {
+    elements.input.focus();
+    if (selectText && typeof elements.input.select === "function") {
+      elements.input.select();
+    }
+  }
+
   function normalizeResponse(response) {
     if (typeof response === "string") {
       return { text: response };
@@ -222,6 +234,7 @@
     if (id < state.lastDispatchId) {
       return;
     }
+    elements.output.removeAttribute("aria-busy");
     if (payload && payload.error) {
       updateOutput(payload.error, true);
       setStatus("Render failed.", "error");
@@ -276,6 +289,7 @@
           state.workerReject(new Error(data.error || "Worker failed"));
           state.workerReject = null;
         }
+        elements.output.removeAttribute("aria-busy");
         tearDownWorker();
         state.useWorker = false;
         state.ready = false;
@@ -300,6 +314,7 @@
       state.workerReject(new Error(message));
       state.workerReject = null;
     }
+    elements.output.removeAttribute("aria-busy");
     tearDownWorker();
     state.useWorker = false;
     state.ready = false;
@@ -399,9 +414,11 @@
   }
 
   async function performRender() {
+    elements.output.setAttribute("aria-busy", "true");
     try {
       await ensureRenderer();
     } catch (err) {
+      elements.output.removeAttribute("aria-busy");
       updateOutput(err.message || String(err), true);
       setStatus("Render failed.", "error");
       return;
@@ -464,11 +481,13 @@
     setStatus("Cleared.");
     syncURLFromForm();
     scheduleRender(true);
+    focusEditor();
   }
 
   async function copyOutput() {
     const text = elements.output.textContent || "";
     if (!text) {
+      setStatus("Nothing to copy yet.", "error");
       return;
     }
     try {
@@ -483,6 +502,7 @@
   function downloadOutput() {
     const text = elements.output.textContent || "";
     if (!text) {
+      setStatus("Nothing to download yet.", "error");
       return;
     }
     const blob = new Blob([text], { type: "text/plain" });
@@ -497,6 +517,29 @@
     setStatus("Download started.", "success");
   }
 
+  function handleGlobalKeydown(event) {
+    const key = event.key || "";
+    const modifier = event.metaKey || event.ctrlKey;
+    const lowerKey = key.toLowerCase();
+
+    if (modifier && key === "Enter") {
+      event.preventDefault();
+      scheduleRender(true);
+      return;
+    }
+
+    if (modifier && lowerKey === "s") {
+      event.preventDefault();
+      downloadOutput();
+      return;
+    }
+
+    if (!modifier && key === "Escape") {
+      event.preventDefault();
+      focusEditor(true);
+    }
+  }
+
   function handleExampleChange() {
     const selected = elements.exampleSelect.value;
     const examples = Array.isArray(window.MERMAID_ASCII_EXAMPLES)
@@ -505,6 +548,7 @@
     const idx = parseInt(selected, 10);
     if (!Number.isNaN(idx) && examples[idx]) {
       elements.input.value = examples[idx].mermaid;
+      focusEditor();
       scheduleRender(true);
     }
   }
@@ -549,12 +593,14 @@
       applyStateToForm(initialState);
     }
     attachEvents();
+    elements.output.setAttribute("aria-busy", "true");
     loadRendererViaWorker();
     ensureRenderer()
       .then(() => scheduleRender(true))
       .catch((err) => {
         setStatus(`Failed to load renderer: ${err.message}`, "error");
       });
+    window.addEventListener("keydown", handleGlobalKeydown);
   });
 
   if (typeof window !== "undefined") {
