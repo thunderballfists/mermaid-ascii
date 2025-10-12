@@ -30,9 +30,10 @@ type textNode struct {
 }
 
 type textEdge struct {
-	parent textNode
-	child  textNode
-	label  string
+	parent        textNode
+	child         textNode
+	label         string
+	labelNearHead bool
 }
 
 type nodeDefinition struct {
@@ -66,8 +67,74 @@ var edgeOperatorPattern = func() string {
 	return strings.Join(ops, "|")
 }()
 
-var edgeWithLabelRegex = regexp.MustCompile(`^(.+)\s*(?:` + edgeOperatorPattern + `)\s*\|(.+)\|\s*(.+)$`)
 var edgeRegex = regexp.MustCompile(`^(.+)\s*(?:` + edgeOperatorPattern + `)\s*(.+)$`)
+var edgeTailPipeLabelRegex = regexp.MustCompile(`^(.+?)\s*(?:` + edgeOperatorPattern + `)\s*\|(.+?)\|\s*(.+)$`)
+var edgeMidPipeLabelRegex = regexp.MustCompile(`^(.+?)\s*--\s*\|(.+?)\|\s*(?:` + edgeOperatorPattern + `)\s*(.+)$`)
+var edgeMidTextLabelRegex = regexp.MustCompile(`^(.+?)\s*--\s+(.+?)\s+(?:` + edgeOperatorPattern + `)\s*(.+)$`)
+var edgeOpenLabelRegex = regexp.MustCompile(`^(.+?)\s*--\s+(.+?)\s+--\s*(.+)$`)
+
+type edgeSpec struct {
+	lhs      string
+	rhs      string
+	label    string
+	nearHead bool
+}
+
+func sanitizeEdgeLabel(raw string) string {
+	label, ok := processRawLabel(raw)
+	if !ok {
+		return ""
+	}
+	return label
+}
+
+func parseEdgeSpecification(line string) (edgeSpec, bool) {
+	if match := edgeMidPipeLabelRegex.FindStringSubmatch(line); match != nil {
+		label := sanitizeEdgeLabel(match[2])
+		return edgeSpec{lhs: match[1], rhs: match[3], label: label, nearHead: label != ""}, true
+	}
+	if match := edgeMidTextLabelRegex.FindStringSubmatch(line); match != nil {
+		label := sanitizeEdgeLabel(match[2])
+		return edgeSpec{lhs: match[1], rhs: match[3], label: label, nearHead: label != ""}, true
+	}
+	if match := edgeTailPipeLabelRegex.FindStringSubmatch(line); match != nil {
+		label := sanitizeEdgeLabel(match[2])
+		return edgeSpec{lhs: match[1], rhs: match[3], label: label, nearHead: false}, true
+	}
+	if match := edgeOpenLabelRegex.FindStringSubmatch(line); match != nil {
+		label := sanitizeEdgeLabel(match[2])
+		return edgeSpec{lhs: match[1], rhs: match[3], label: label, nearHead: false}, true
+	}
+	if match := edgeRegex.FindStringSubmatch(line); match != nil {
+		return edgeSpec{lhs: match[1], rhs: match[2]}, true
+	}
+	return edgeSpec{}, false
+}
+
+func (gp *graphProperties) tryParseEdge(line string) ([]textNode, bool, error) {
+	spec, ok := parseEdgeSpecification(line)
+	if !ok {
+		return nil, false, nil
+	}
+
+	var (
+		lhs []textNode
+		rhs []textNode
+		err error
+	)
+
+	if lhs, err = gp.parseString(spec.lhs); err != nil {
+		lhs = []textNode{gp.parseNode(spec.lhs)}
+	}
+	if rhs, err = gp.parseString(spec.rhs); err != nil {
+		rhs = []textNode{gp.parseNode(spec.rhs)}
+	}
+
+	if spec.label != "" {
+		return setArrowWithLabel(lhs, rhs, spec.label, spec.nearHead, gp.data), true, nil
+	}
+	return setArrow(lhs, rhs, gp.data), true, nil
+}
 
 type shapeDelimiter struct {
 	open  string
@@ -274,18 +341,18 @@ func parseStyleClass(matchedLine []string) styleClass {
 	return styleClass{className, styleMap}
 }
 
-func setArrowWithLabel(lhs, rhs []textNode, label string, data *orderedmap.OrderedMap[string, []textEdge]) []textNode {
+func setArrowWithLabel(lhs, rhs []textNode, label string, nearHead bool, data *orderedmap.OrderedMap[string, []textEdge]) []textNode {
 	log.Debug("Setting arrow from ", lhs, " to ", rhs, " with label ", label)
 	for _, l := range lhs {
 		for _, r := range rhs {
-			setData(l, textEdge{l, r, label}, data)
+			setData(l, textEdge{parent: l, child: r, label: label, labelNearHead: nearHead}, data)
 		}
 	}
 	return rhs
 }
 
 func setArrow(lhs, rhs []textNode, data *orderedmap.OrderedMap[string, []textEdge]) []textNode {
-	return setArrowWithLabel(lhs, rhs, "", data)
+	return setArrowWithLabel(lhs, rhs, "", false, data)
 }
 
 func addNode(node textNode, data *orderedmap.OrderedMap[string, []textEdge]) {
@@ -316,42 +383,20 @@ func (gp *graphProperties) parseString(line string) ([]textNode, error) {
 	log.Debugf("Parsing line: %v", line)
 	var lhs, rhs []textNode
 	var err error
+	if strings.TrimSpace(line) == "" {
+		// Ignore empty lines
+		return []textNode{}, nil
+	}
+
+	if nodes, handled, err := gp.tryParseEdge(line); handled {
+		return nodes, err
+	}
+
 	// Patterns are matched in order
 	patterns := []struct {
 		regex   *regexp.Regexp
 		handler func([]string) ([]textNode, error)
 	}{
-		{
-			regex: regexp.MustCompile(`^\s*$`),
-			handler: func(match []string) ([]textNode, error) {
-				// Ignore empty lines
-				return []textNode{}, nil
-			},
-		},
-		{
-			regex: edgeWithLabelRegex,
-			handler: func(match []string) ([]textNode, error) {
-				if lhs, err = gp.parseString(match[0]); err != nil {
-					lhs = []textNode{gp.parseNode(match[0])}
-				}
-				if rhs, err = gp.parseString(match[2]); err != nil {
-					rhs = []textNode{gp.parseNode(match[2])}
-				}
-				return setArrowWithLabel(lhs, rhs, match[1], gp.data), nil
-			},
-		},
-		{
-			regex: edgeRegex,
-			handler: func(match []string) ([]textNode, error) {
-				if lhs, err = gp.parseString(match[0]); err != nil {
-					lhs = []textNode{gp.parseNode(match[0])}
-				}
-				if rhs, err = gp.parseString(match[1]); err != nil {
-					rhs = []textNode{gp.parseNode(match[1])}
-				}
-				return setArrow(lhs, rhs, gp.data), nil
-			},
-		},
 		{
 			regex: regexp.MustCompile(`^classDef\s+(.+)\s+(.+)$`),
 			handler: func(match []string) ([]textNode, error) {

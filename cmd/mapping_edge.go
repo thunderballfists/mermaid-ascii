@@ -10,6 +10,7 @@ type edge struct {
 	from      *node
 	to        *node
 	text      string
+	nearHead  bool
 	path      []gridCoord
 	labelLine []gridCoord
 	startDir  direction
@@ -101,8 +102,18 @@ func (g *graph) determineLabelLine(e *edge) {
 		minX = largestLine[0].x
 	}
 	middleX := minX + (maxX-minX)/2
-	log.Debugf("Increasing column width for column %v from size %v to %v", middleX, g.columnWidth[middleX], lenLabel+2)
-	g.columnWidth[middleX] = Max(g.columnWidth[middleX], lenLabel+2) // Wrap with dashes + arrowhead
+	extraSpacing := 2
+	switch {
+	case lenLabel <= 2:
+		extraSpacing = 9
+	case lenLabel <= 3:
+		extraSpacing = 8
+	case lenLabel <= 5:
+		extraSpacing = 4
+	}
+	desiredWidth := lenLabel + extraSpacing
+	log.Debugf("Increasing column width for column %v from size %v to %v", middleX, g.columnWidth[middleX], desiredWidth)
+	g.columnWidth[middleX] = Max(g.columnWidth[middleX], desiredWidth) // Wrap with dashes + arrowhead
 	log.Debugf("New column sizes: %v", g.columnWidth)
 	e.labelLine = largestLine
 }
