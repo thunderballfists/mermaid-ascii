@@ -321,16 +321,19 @@ func (g *graph) drawArrowLabel(e *edge) *drawing {
 	}
 
 	log.Debugf("Drawing text '%s' on gridline %v", e.text, e.labelLine)
-	d.drawTextOnLine(g.lineToDrawing(e.labelLine), e.text)
+	d.drawTextOnLine(g.lineToDrawing(e.labelLine), e.text, e.nearHead)
 	return d
 }
 
-func (d *drawing) drawTextOnLine(line []drawingCoord, label string) {
+func (d *drawing) drawTextOnLine(line []drawingCoord, label string, nearHead bool) {
 	// Write text in middle of the line
 	//  123456789
 	// |---------|
 	//     123
 	log.Debugf("Drawing text '%s' on drawingline %v", label, line)
+	if len(line) == 0 {
+		return
+	}
 	var minX, maxX, minY, maxY int
 	if line[0].x > line[1].x {
 		minX = line[1].x
@@ -348,6 +351,59 @@ func (d *drawing) drawTextOnLine(line []drawingCoord, label string) {
 	}
 	middleX := minX + (maxX-minX)/2
 	middleY := minY + (maxY-minY)/2
+	if minY == maxY {
+		span := maxX - minX
+		if span < len(label)+2 {
+			// Not enough room to place the label with padding on both sides
+			return
+		}
+
+		available := span - len(label)
+		leftLen := available / 2
+		rightLen := available - leftLen
+
+		if nearHead {
+			if line[1].x > line[0].x {
+				if rightLen > 1 {
+					rightLen--
+					leftLen++
+				}
+			} else if line[1].x < line[0].x {
+				if leftLen > 1 {
+					leftLen--
+					rightLen++
+				}
+			}
+		} else {
+			if line[1].x > line[0].x {
+				if rightLen <= leftLen && leftLen > 1 {
+					leftLen--
+					rightLen++
+				}
+			} else if line[1].x < line[0].x {
+				if leftLen <= rightLen && rightLen > 1 {
+					leftLen++
+					rightLen--
+				}
+			}
+		}
+
+		if leftLen <= 0 || rightLen <= 0 {
+			return
+		}
+
+		startX := minX + leftLen + 1
+		if startX <= minX {
+			startX = minX + 1
+		}
+		if end := startX + len(label); end >= maxX {
+			startX = maxX - len(label) - 1
+		}
+		startLabelCoord := drawingCoord{x: startX, y: middleY}
+		d.drawText(startLabelCoord, label)
+		return
+	}
+
 	startLabelCoord := drawingCoord{x: middleX - len(label)/2, y: middleY}
 	d.drawText(startLabelCoord, label)
 }

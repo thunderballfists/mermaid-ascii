@@ -94,7 +94,7 @@ func mkGraph(properties *graphProperties) graph {
 			if textEdge.parent.styleClass != "" {
 				parentNode.styleClassName = textEdge.parent.styleClass
 			}
-			e := edge{from: parentNode, to: childNode, text: textEdge.label}
+			e := edge{from: parentNode, to: childNode, text: textEdge.label, nearHead: textEdge.labelNearHead}
 			g.edges = append(g.edges, &e)
 		}
 	}
