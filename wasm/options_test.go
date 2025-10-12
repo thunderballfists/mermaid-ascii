@@ -37,6 +37,16 @@ func TestDecodeOptionsValues(t *testing.T) {
 	}
 }
 
+func TestDecodeOptionsHeadsVariants(t *testing.T) {
+	opts, err := decodeOptions(`{"heads":"none"}`)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if opts.Heads != "none" {
+		t.Fatalf("expected heads to be none, got %q", opts.Heads)
+	}
+}
+
 func TestDecodeOptionsInvalidJSON(t *testing.T) {
 	_, err := decodeOptions("{")
 	if err == nil {

@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/AlexanderGrooff/mermaid-ascii/pkg/lib"
 	log "github.com/sirupsen/logrus"
@@ -17,6 +19,7 @@ var paddingBetweenX = 5
 var paddingBetweenY = 5
 var graphDirection = "LR"
 var useAscii = false
+var headStyle = HeadStylePointer
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -55,6 +58,7 @@ var rootCmd = &cobra.Command{
 			UseASCII: useAscii,
 			PaddingX: &paddingX,
 			PaddingY: &paddingY,
+			Heads:    headStyleString(headStyle),
 		}); err != nil {
 			log.Fatal("Failed to render mermaid input: ", err)
 		}
@@ -93,10 +97,12 @@ func renderMermaidWithOptions(mermaid string, opts lib.Options) (string, error) 
 	originalUseASCII := useAscii
 	originalPaddingX := paddingBetweenX
 	originalPaddingY := paddingBetweenY
+	originalHeadStyle := headStyle
 	defer func() {
 		useAscii = originalUseASCII
 		paddingBetweenX = originalPaddingX
 		paddingBetweenY = originalPaddingY
+		headStyle = originalHeadStyle
 	}()
 
 	useAscii = opts.UseASCII
@@ -106,6 +112,11 @@ func renderMermaidWithOptions(mermaid string, opts lib.Options) (string, error) 
 	if opts.PaddingY != nil {
 		paddingBetweenY = *opts.PaddingY
 	}
+	nextHeadStyle, err := parseHeadStyle(opts.Heads)
+	if err != nil {
+		return "", err
+	}
+	headStyle = nextHeadStyle
 
 	properties, err := mermaidFileToMap(mermaid, "cli")
 	if err != nil {
@@ -114,4 +125,32 @@ func renderMermaidWithOptions(mermaid string, opts lib.Options) (string, error) 
 
 	result := drawMap(properties)
 	return result, nil
+}
+
+func parseHeadStyle(value string) (HeadStyle, error) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "", "pointer":
+		return HeadStylePointer, nil
+	case "open":
+		return HeadStyleOpen, nil
+	case "none":
+		return HeadStyleNone, nil
+	case "wide":
+		return HeadStyleWide, nil
+	default:
+		return HeadStylePointer, fmt.Errorf("unknown head style %q", value)
+	}
+}
+
+func headStyleString(style HeadStyle) string {
+	switch style {
+	case HeadStyleOpen:
+		return "open"
+	case HeadStyleNone:
+		return "none"
+	case HeadStyleWide:
+		return "wide"
+	default:
+		return "pointer"
+	}
 }

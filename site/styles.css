@@ -79,6 +79,14 @@ textarea {
   border: 1px solid #cbd2d9;
 }
 
+.control select {
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #cbd2d9;
+  background-color: #fff;
+  font-size: 0.95rem;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;

@@ -87,6 +87,7 @@ func (e *edge) flowOptions() FlowOptions {
 	default:
 		opts.LineStyle = LineStyleSolid
 	}
+	opts.Heads = headStyle
 	return opts
 }
 

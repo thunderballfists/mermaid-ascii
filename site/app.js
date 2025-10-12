@@ -4,6 +4,7 @@
     extended: document.getElementById("extended-toggle"),
     paddingX: document.getElementById("padding-x"),
     paddingY: document.getElementById("padding-y"),
+    heads: document.getElementById("heads"),
     renderBtn: document.getElementById("render-btn"),
     clearBtn: document.getElementById("clear-btn"),
     copyBtn: document.getElementById("copy-btn"),
@@ -48,6 +49,9 @@
     const paddingY = parseInt(elements.paddingY.value, 10);
     if (!Number.isNaN(paddingY)) {
       opts.paddingY = paddingY;
+    }
+    if (elements.heads && elements.heads.value) {
+      opts.heads = elements.heads.value;
     }
     return opts;
   }
@@ -173,6 +177,9 @@
     elements.input.value = SAMPLE_MERMAID;
     elements.paddingX.value = "5";
     elements.paddingY.value = "5";
+    if (elements.heads) {
+      elements.heads.value = "pointer";
+    }
     attachEvents();
     loadWasm();
   });
