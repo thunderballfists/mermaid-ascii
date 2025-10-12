@@ -55,32 +55,37 @@ func (d *drawing) drawText(start drawingCoord, text string) {
 	}
 }
 
-func (d *drawing) drawLine(from drawingCoord, to drawingCoord, offsetFrom int, offsetTo int, edgeStyle EdgeStyle) []drawingCoord {
+func (d *drawing) drawLine(from drawingCoord, to drawingCoord, offsetFrom int, offsetTo int, e *edge) []drawingCoord {
 	// Offset determines how far from the actual coord the line should start/stop.
 	direction := determineDirection(genericCoord(from), genericCoord(to))
 	drawnCoords := make([]drawingCoord, 0)
 	log.Debug("Drawing line from ", from, " to ", to, " direction: ", direction, " offsetFrom: ", offsetFrom, " offsetTo: ", offsetTo)
 	if !useAscii {
+		opts := defaultFlowOptions()
+		if e != nil {
+			opts = e.flowOptions()
+		}
+		pal := buildPalette(opts)
 		switch direction {
 		case Up:
 			for y := from.y - offsetFrom; y >= to.y-offsetTo; y-- {
 				drawnCoords = append(drawnCoords, drawingCoord{from.x, y})
-				(*d)[from.x][y] = "│"
+				(*d)[from.x][y] = pal.Vertical
 			}
 		case Down:
 			for y := from.y + offsetFrom; y <= to.y+offsetTo; y++ {
 				drawnCoords = append(drawnCoords, drawingCoord{from.x, y})
-				(*d)[from.x][y] = "│"
+				(*d)[from.x][y] = pal.Vertical
 			}
 		case Left:
 			for x := from.x - offsetFrom; x >= to.x-offsetTo; x-- {
 				drawnCoords = append(drawnCoords, drawingCoord{x, from.y})
-				(*d)[x][from.y] = "─"
+				(*d)[x][from.y] = pal.Horizontal
 			}
 		case Right:
 			for x := from.x + offsetFrom; x <= to.x+offsetTo; x++ {
 				drawnCoords = append(drawnCoords, drawingCoord{x, from.y})
-				(*d)[x][from.y] = "─"
+				(*d)[x][from.y] = pal.Horizontal
 			}
 		case UpperLeft:
 			for x, y := from.x, from.y-offsetFrom; x >= to.x-offsetTo && y >= to.y-offsetTo; x, y = x-1, y-1 {
@@ -104,6 +109,10 @@ func (d *drawing) drawLine(from drawingCoord, to drawingCoord, offsetFrom int, o
 			}
 		}
 	} else {
+		horizChar := "-"
+		if e != nil && e.edgeStyle == StyleThick {
+			horizChar = "="
+		}
 		switch direction {
 		case Up:
 			for y := from.y - offsetFrom; y >= to.y-offsetTo; y-- {
@@ -116,19 +125,11 @@ func (d *drawing) drawLine(from drawingCoord, to drawingCoord, offsetFrom int, o
 				(*d)[from.x][y] = "|"
 			}
 		case Left:
-			horizChar := "-"
-			if edgeStyle == StyleThick {
-				horizChar = "="
-			}
 			for x := from.x - offsetFrom; x >= to.x-offsetTo; x-- {
 				drawnCoords = append(drawnCoords, drawingCoord{x, from.y})
 				(*d)[x][from.y] = horizChar
 			}
 		case Right:
-			horizChar := "-"
-			if edgeStyle == StyleThick {
-				horizChar = "="
-			}
 			for x := from.x + offsetFrom; x <= to.x+offsetTo; x++ {
 				drawnCoords = append(drawnCoords, drawingCoord{x, from.y})
 				(*d)[x][from.y] = horizChar
@@ -191,27 +192,29 @@ func drawBox(n *node, g graph) *drawing {
 	boxDrawing := *(mkDrawing(Max(from.x, to.x), Max(from.y, to.y)))
 	log.Debug("Drawing box from ", from, " to ", to)
 	if !useAscii {
+		opts := defaultFlowOptions()
+		pal := buildPalette(opts)
 		// Draw top border
 		for x := from.x + 1; x < to.x; x++ {
-			boxDrawing[x][from.y] = "─" // Horizontal line
+			boxDrawing[x][from.y] = pal.Horizontal
 		}
 		// Draw bottom border
 		for x := from.x + 1; x < to.x; x++ {
-			boxDrawing[x][to.y] = "─" // Horizontal line
+			boxDrawing[x][to.y] = pal.Horizontal
 		}
 		// Draw left border
 		for y := from.y + 1; y < to.y; y++ {
-			boxDrawing[from.x][y] = "│" // Vertical line
+			boxDrawing[from.x][y] = pal.Vertical
 		}
 		// Draw right border
 		for y := from.y + 1; y < to.y; y++ {
-			boxDrawing[to.x][y] = "│" // Vertical line
+			boxDrawing[to.x][y] = pal.Vertical
 		}
 		// Draw corners
-		boxDrawing[from.x][from.y] = "┌" // Top left corner
-		boxDrawing[to.x][from.y] = "┐"   // Top right corner
-		boxDrawing[from.x][to.y] = "└"   // Bottom left corner
-		boxDrawing[to.x][to.y] = "┘"     // Bottom right corner
+		boxDrawing[from.x][from.y] = pal.CornerTopLeft
+		boxDrawing[to.x][from.y] = pal.CornerTopRight
+		boxDrawing[from.x][to.y] = pal.CornerBottomLeft
+		boxDrawing[to.x][to.y] = pal.CornerBottomRight
 	} else {
 		// Draw top border
 		for x := from.x + 1; x < to.x; x++ {
@@ -261,27 +264,29 @@ func drawSubgraph(sg *subgraph, g graph) *drawing {
 	log.Debugf("Drawing subgraph %s from (%d,%d) to (%d,%d)", sg.name, from.x, from.y, to.x, to.y)
 
 	if !useAscii {
+		opts := defaultFlowOptions()
+		pal := buildPalette(opts)
 		// Draw top border
 		for x := from.x + 1; x < to.x; x++ {
-			subgraphDrawing[x][from.y] = "─"
+			subgraphDrawing[x][from.y] = pal.Horizontal
 		}
 		// Draw bottom border
 		for x := from.x + 1; x < to.x; x++ {
-			subgraphDrawing[x][to.y] = "─"
+			subgraphDrawing[x][to.y] = pal.Horizontal
 		}
 		// Draw left border
 		for y := from.y + 1; y < to.y; y++ {
-			subgraphDrawing[from.x][y] = "│"
+			subgraphDrawing[from.x][y] = pal.Vertical
 		}
 		// Draw right border
 		for y := from.y + 1; y < to.y; y++ {
-			subgraphDrawing[to.x][y] = "│"
+			subgraphDrawing[to.x][y] = pal.Vertical
 		}
 		// Draw corners
-		subgraphDrawing[from.x][from.y] = "┌"
-		subgraphDrawing[to.x][from.y] = "┐"
-		subgraphDrawing[from.x][to.y] = "└"
-		subgraphDrawing[to.x][to.y] = "┘"
+		subgraphDrawing[from.x][from.y] = pal.CornerTopLeft
+		subgraphDrawing[to.x][from.y] = pal.CornerTopRight
+		subgraphDrawing[from.x][to.y] = pal.CornerBottomLeft
+		subgraphDrawing[to.x][to.y] = pal.CornerBottomRight
 	} else {
 		// Draw top border
 		for x := from.x + 1; x < to.x; x++ {

@@ -15,7 +15,6 @@ type edge struct {
 	labelLine []gridCoord
 	startDir  direction
 	endDir    direction
-	style     arrowBodyStyle
 	edgeStyle EdgeStyle
 	arrowDir  arrowDirection
 	leftCap   arrowEndCap
@@ -73,6 +72,22 @@ func (g *graph) determinePath(e *edge) {
 		e.endDir = alternativeOppositeDir
 		e.path = alternativePath
 	}
+}
+
+func (e *edge) flowOptions() FlowOptions {
+	opts := defaultFlowOptions()
+	switch e.edgeStyle {
+	case StyleThick:
+		opts.Thickness = ThicknessDouble
+		opts.LineStyle = LineStyleSolid
+	case StyleDotted:
+		opts.LineStyle = LineStyleDotted
+	case StyleDashed:
+		opts.LineStyle = LineStyleDashed
+	default:
+		opts.LineStyle = LineStyleSolid
+	}
+	return opts
 }
 
 func (g *graph) determineLabelLine(e *edge) {

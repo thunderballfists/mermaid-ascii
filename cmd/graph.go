@@ -99,7 +99,6 @@ func mkGraph(properties *graphProperties) graph {
 				to:        childNode,
 				text:      textEdge.label,
 				nearHead:  textEdge.labelNearHead,
-				style:     textEdge.style,
 				edgeStyle: textEdge.edgeStyle,
 				arrowDir:  textEdge.arrowDir,
 				leftCap:   textEdge.leftCap,
