@@ -3,7 +3,6 @@ package cmd
 import (
 	"errors"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -34,6 +33,11 @@ type textEdge struct {
 	child         textNode
 	label         string
 	labelNearHead bool
+	style         arrowBodyStyle
+	arrowDir      arrowDirection
+	leftCap       arrowEndCap
+	rightCap      arrowEndCap
+	lenHint       int
 }
 
 type nodeDefinition struct {
@@ -53,31 +57,183 @@ type textSubgraph struct {
 
 var nodeWithClassPattern = regexp.MustCompile(`^(.+):::(.+)$`)
 
-var supportedEdgeOperators = []string{"-->", "-.->", "-x->", "-o->"}
+var edgeOperatorPattern = `<?[ox]?[-.=]+(?:[ox]?[-.=]+)*[ox]?>?`
 
-var edgeOperatorPattern = func() string {
-	ops := make([]string, len(supportedEdgeOperators))
-	copy(ops, supportedEdgeOperators)
-	sort.SliceStable(ops, func(i, j int) bool {
-		return len(ops[i]) > len(ops[j])
-	})
-	for i, op := range ops {
-		ops[i] = regexp.QuoteMeta(op)
-	}
-	return strings.Join(ops, "|")
-}()
-
-var edgeRegex = regexp.MustCompile(`^(.+)\s*(?:` + edgeOperatorPattern + `)\s*(.+)$`)
-var edgeTailPipeLabelRegex = regexp.MustCompile(`^(.+?)\s*(?:` + edgeOperatorPattern + `)\s*\|(.+?)\|\s*(.+)$`)
-var edgeMidPipeLabelRegex = regexp.MustCompile(`^(.+?)\s*--\s*\|(.+?)\|\s*(?:` + edgeOperatorPattern + `)\s*(.+)$`)
-var edgeMidTextLabelRegex = regexp.MustCompile(`^(.+?)\s*--\s+(.+?)\s+(?:` + edgeOperatorPattern + `)\s*(.+)$`)
+var edgeTailPipeLabelRegex = regexp.MustCompile(`^(.+?)\s*(` + edgeOperatorPattern + `)\s*\|(.+?)\|\s*(.+)$`)
+var edgeMidPipeLabelRegex = regexp.MustCompile(`^(.+?)\s*--\s*\|(.+?)\|\s*(` + edgeOperatorPattern + `)\s*(.+)$`)
+var edgeMidTextLabelRegex = regexp.MustCompile(`^(.+?)\s*--\s+(.+?)\s+(` + edgeOperatorPattern + `)\s*(.+)$`)
 var edgeOpenLabelRegex = regexp.MustCompile(`^(.+?)\s*--\s+(.+?)\s+--\s*(.+)$`)
+var edgeOperatorRegex = regexp.MustCompile(edgeOperatorPattern)
 
 type edgeSpec struct {
-	lhs      string
-	rhs      string
-	label    string
-	nearHead bool
+	lhs       string
+	rhs       string
+	operator  string
+	label     string
+	nearHead  bool
+	style     arrowBodyStyle
+	direction arrowDirection
+	leftCap   arrowEndCap
+	rightCap  arrowEndCap
+	lenHint   int
+}
+
+func classifyEdgeOperator(raw string) (arrowBodyStyle, arrowDirection, arrowEndCap, arrowEndCap, int) {
+	operator := strings.TrimSpace(raw)
+	if operator == "" {
+		return arrowStyleSolid, arrowDirOpen, arrowCapNone, arrowCapNone, 0
+	}
+
+	var style arrowBodyStyle
+	switch {
+	case strings.Contains(operator, "="):
+		style = arrowStyleThick
+	case strings.Contains(operator, "."):
+		style = arrowStyleDotted
+	default:
+		style = arrowStyleSolid
+	}
+
+	hasLeft := strings.Contains(operator, "<")
+	hasRight := strings.Contains(operator, ">")
+	direction := arrowDirOpen
+	switch {
+	case hasLeft && hasRight:
+		direction = arrowDirBoth
+	case hasRight:
+		direction = arrowDirForward
+	case hasLeft:
+		direction = arrowDirBackward
+	default:
+		direction = arrowDirOpen
+	}
+
+	lenHint := 0
+	runes := []rune(operator)
+	for _, r := range runes {
+		if r == '-' || r == '.' || r == '=' {
+			lenHint++
+		}
+	}
+
+	firstBody := -1
+	lastBody := -1
+	for i, r := range runes {
+		if r == '-' || r == '.' || r == '=' {
+			firstBody = i
+			break
+		}
+	}
+	for i := len(runes) - 1; i >= 0; i-- {
+		if runes[i] == '-' || runes[i] == '.' || runes[i] == '=' {
+			lastBody = i
+			break
+		}
+	}
+
+	leftCap := arrowCapNone
+	rightCap := arrowCapNone
+
+	if firstBody > 0 {
+		for i := 0; i < firstBody; i++ {
+			switch runes[i] {
+			case 'o':
+				leftCap = arrowCapCircle
+			case 'x':
+				leftCap = arrowCapCross
+			}
+		}
+	}
+
+	if lastBody != -1 && lastBody < len(runes)-1 {
+		for i := len(runes) - 1; i > lastBody; i-- {
+			switch runes[i] {
+			case 'o':
+				rightCap = arrowCapCircle
+			case 'x':
+				rightCap = arrowCapCross
+			}
+		}
+	}
+
+	if rightCap == arrowCapNone {
+		for i := len(runes) - 1; i >= 0; i-- {
+			if runes[i] != 'o' && runes[i] != 'x' {
+				continue
+			}
+			if firstBody != -1 && i > firstBody {
+				if runes[i] == 'o' {
+					rightCap = arrowCapCircle
+				} else {
+					rightCap = arrowCapCross
+				}
+				break
+			}
+			if firstBody != -1 && i < firstBody {
+				if runes[i] == 'o' {
+					leftCap = arrowCapCircle
+				} else {
+					leftCap = arrowCapCross
+				}
+				break
+			}
+		}
+	}
+
+	if lenHint == 0 {
+		lenHint = len(runes)
+	}
+
+	return style, direction, leftCap, rightCap, lenHint
+}
+
+func buildEdgeSpec(lhs, rhs, operator, label string, nearHead bool) edgeSpec {
+	lhs = strings.TrimSpace(lhs)
+	rhs = strings.TrimSpace(rhs)
+	operator = strings.TrimSpace(operator)
+	style, direction, leftCap, rightCap, lenHint := classifyEdgeOperator(operator)
+	return edgeSpec{
+		lhs:       lhs,
+		rhs:       rhs,
+		operator:  operator,
+		label:     label,
+		nearHead:  nearHead,
+		style:     style,
+		direction: direction,
+		leftCap:   leftCap,
+		rightCap:  rightCap,
+		lenHint:   lenHint,
+	}
+}
+
+func splitEdgeComponents(line string) (string, string, string, bool) {
+	matches := edgeOperatorRegex.FindAllStringIndex(line, -1)
+	var opRange []int
+	var operator string
+	for i := len(matches) - 1; i >= 0; i-- {
+		rng := matches[i]
+		op := line[rng[0]:rng[1]]
+		count := 0
+		for _, r := range op {
+			if r == '-' || r == '.' || r == '=' {
+				count++
+			}
+		}
+		if count >= 2 {
+			opRange = rng
+			operator = op
+			break
+		}
+	}
+	if opRange == nil {
+		return "", "", "", false
+	}
+	lhs := strings.TrimSpace(line[:opRange[0]])
+	rhs := strings.TrimSpace(line[opRange[1]:])
+	if lhs == "" || rhs == "" {
+		return "", "", "", false
+	}
+	return lhs, operator, rhs, true
 }
 
 func sanitizeEdgeLabel(raw string) string {
@@ -91,22 +247,22 @@ func sanitizeEdgeLabel(raw string) string {
 func parseEdgeSpecification(line string) (edgeSpec, bool) {
 	if match := edgeMidPipeLabelRegex.FindStringSubmatch(line); match != nil {
 		label := sanitizeEdgeLabel(match[2])
-		return edgeSpec{lhs: match[1], rhs: match[3], label: label, nearHead: false}, true
+		return buildEdgeSpec(match[1], match[4], match[3], label, false), true
 	}
 	if match := edgeMidTextLabelRegex.FindStringSubmatch(line); match != nil {
 		label := sanitizeEdgeLabel(match[2])
-		return edgeSpec{lhs: match[1], rhs: match[3], label: label, nearHead: false}, true
+		return buildEdgeSpec(match[1], match[4], match[3], label, false), true
 	}
 	if match := edgeTailPipeLabelRegex.FindStringSubmatch(line); match != nil {
-		label := sanitizeEdgeLabel(match[2])
-		return edgeSpec{lhs: match[1], rhs: match[3], label: label, nearHead: label != ""}, true
+		label := sanitizeEdgeLabel(match[3])
+		return buildEdgeSpec(match[1], match[4], match[2], label, label != ""), true
 	}
 	if match := edgeOpenLabelRegex.FindStringSubmatch(line); match != nil {
 		label := sanitizeEdgeLabel(match[2])
-		return edgeSpec{lhs: match[1], rhs: match[3], label: label, nearHead: false}, true
+		return buildEdgeSpec(match[1], match[3], "---", label, false), true
 	}
-	if match := edgeRegex.FindStringSubmatch(line); match != nil {
-		return edgeSpec{lhs: match[1], rhs: match[2]}, true
+	if lhs, operator, rhs, ok := splitEdgeComponents(line); ok {
+		return buildEdgeSpec(lhs, rhs, operator, "", false), true
 	}
 	return edgeSpec{}, false
 }
@@ -130,10 +286,7 @@ func (gp *graphProperties) tryParseEdge(line string) ([]textNode, bool, error) {
 		rhs = []textNode{gp.parseNode(spec.rhs)}
 	}
 
-	if spec.label != "" {
-		return setArrowWithLabel(lhs, rhs, spec.label, spec.nearHead, gp.data), true, nil
-	}
-	return setArrow(lhs, rhs, gp.data), true, nil
+	return setArrowWithSpec(lhs, rhs, spec, gp.data), true, nil
 }
 
 type shapeDelimiter struct {
@@ -341,18 +494,24 @@ func parseStyleClass(matchedLine []string) styleClass {
 	return styleClass{className, styleMap}
 }
 
-func setArrowWithLabel(lhs, rhs []textNode, label string, nearHead bool, data *orderedmap.OrderedMap[string, []textEdge]) []textNode {
-	log.Debug("Setting arrow from ", lhs, " to ", rhs, " with label ", label)
+func setArrowWithSpec(lhs, rhs []textNode, spec edgeSpec, data *orderedmap.OrderedMap[string, []textEdge]) []textNode {
+	log.Debug("Setting arrow from ", lhs, " to ", rhs, " with operator ", spec.operator, " and label ", spec.label)
 	for _, l := range lhs {
 		for _, r := range rhs {
-			setData(l, textEdge{parent: l, child: r, label: label, labelNearHead: nearHead}, data)
+			setData(l, textEdge{
+				parent:        l,
+				child:         r,
+				label:         spec.label,
+				labelNearHead: spec.nearHead,
+				style:         spec.style,
+				arrowDir:      spec.direction,
+				leftCap:       spec.leftCap,
+				rightCap:      spec.rightCap,
+				lenHint:       spec.lenHint,
+			}, data)
 		}
 	}
 	return rhs
-}
-
-func setArrow(lhs, rhs []textNode, data *orderedmap.OrderedMap[string, []textEdge]) []textNode {
-	return setArrowWithLabel(lhs, rhs, "", false, data)
 }
 
 func addNode(node textNode, data *orderedmap.OrderedMap[string, []textEdge]) {

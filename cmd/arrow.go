@@ -8,6 +8,31 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type arrowBodyStyle int
+
+const (
+	arrowStyleSolid arrowBodyStyle = iota
+	arrowStyleDotted
+	arrowStyleThick
+)
+
+type arrowDirection int
+
+const (
+	arrowDirOpen arrowDirection = iota
+	arrowDirForward
+	arrowDirBackward
+	arrowDirBoth
+)
+
+type arrowEndCap int
+
+const (
+	arrowCapNone arrowEndCap = iota
+	arrowCapCircle
+	arrowCapCross
+)
+
 type priorityQueueItem struct {
 	coord    gridCoord
 	priority int
@@ -112,8 +137,14 @@ func (g *graph) drawArrow(from gridCoord, to gridCoord, e *edge) (*drawing, *dra
 	log.Debugf("Drawing arrow from %v to %v with path %v", from, to, e.path)
 	dLabel := g.drawArrowLabel(e)
 	dPath, linesDrawn, lineDirs := g.drawPath(e.path)
+	if !useAscii {
+		g.applyArrowBodyStyle(dPath, linesDrawn, lineDirs, e, dLabel)
+	}
 	dBoxStart := g.drawBoxStart(e.path, linesDrawn[0])
-	dArrowHead := g.drawArrowHead(linesDrawn[len(linesDrawn)-1], lineDirs[len(lineDirs)-1])
+	dArrowHead := g.drawArrowHead(linesDrawn, lineDirs, e)
+	if !useAscii {
+		g.applyArrowEndCaps(dArrowHead, linesDrawn, e)
+	}
 	dCorners := g.drawCorners(e.path)
 	return dPath, dBoxStart, dArrowHead, dCorners, dLabel
 }
@@ -195,87 +226,254 @@ func (g *graph) drawBoxStart(path []gridCoord, firstLine []drawingCoord) *drawin
 	return &d
 }
 
-func (g *graph) drawArrowHead(line []drawingCoord, fallback direction) *drawing {
+func (g *graph) drawArrowHead(lines [][]drawingCoord, lineDirs []direction, e *edge) *drawing {
 	d := *(copyCanvas(g.drawing))
-	if len(line) == 0 {
+	if len(lines) == 0 {
 		return &d
 	}
-	from := line[0]
-	lastPos := line[len(line)-1]
-	dir := determineDirection(genericCoord(from), genericCoord(lastPos))
-	if len(line) == 1 || dir == Middle {
-		dir = fallback
+
+	lastLine := lines[len(lines)-1]
+	lastFallback := Middle
+	if len(lineDirs) > 0 {
+		lastFallback = lineDirs[len(lineDirs)-1]
 	}
 
-	var char string
-	if !useAscii {
-		switch dir {
-		case Up:
-			char = "▲"
-		case Down:
-			char = "▼"
-		case Left:
-			char = "◄"
-		case Right:
-			char = "►"
-		case UpperRight:
-			char = "◥"
-		case UpperLeft:
-			char = "◤"
-		case LowerRight:
-			char = "◢"
-		case LowerLeft:
-			char = "◣"
-		default:
-			switch fallback {
-			case Up:
-				char = "▲"
-			case Down:
-				char = "▼"
-			case Left:
-				char = "◄"
-			case Right:
-				char = "►"
-			case UpperRight:
-				char = "◥"
-			case UpperLeft:
-				char = "◤"
-			case LowerRight:
-				char = "◢"
-			case LowerLeft:
-				char = "◣"
-			default:
-				char = "●"
+	if useAscii {
+		if len(lastLine) == 0 {
+			return &d
+		}
+		from := lastLine[0]
+		lastPos := lastLine[len(lastLine)-1]
+		dir := determineDirection(genericCoord(from), genericCoord(lastPos))
+		if len(lastLine) == 1 || dir == Middle {
+			dir = lastFallback
+		}
+		char := asciiArrowHead(dir, lastFallback)
+		d[lastPos.x][lastPos.y] = char
+		return &d
+	}
+
+	endHasHead := e.arrowDir == arrowDirForward || e.arrowDir == arrowDirBoth
+	startHasHead := e.arrowDir == arrowDirBackward || e.arrowDir == arrowDirBoth
+
+	if endHasHead && len(lastLine) > 0 {
+		dir := resolveHeadDirection(lastLine, lastFallback, false)
+		char := extendedArrowHeadChar(dir, lastFallback)
+		target := lastLine[len(lastLine)-1]
+		d[target.x][target.y] = char
+	}
+
+	if startHasHead && len(lines) > 0 {
+		firstLine := lines[0]
+		if len(firstLine) > 0 {
+			firstFallback := Middle
+			if len(lineDirs) > 0 {
+				firstFallback = lineDirs[0]
 			}
+			startFallback := firstFallback.getOpposite()
+			dir := resolveHeadDirection(firstLine, startFallback, true)
+			char := extendedArrowHeadChar(dir, startFallback)
+			start := firstLine[0]
+			d[start.x][start.y] = char
+		}
+	}
+
+	return &d
+}
+
+func asciiArrowHead(dir direction, fallback direction) string {
+	switch dir {
+	case Up:
+		return "^"
+	case Down:
+		return "v"
+	case Left:
+		return "<"
+	case Right:
+		return ">"
+	default:
+		switch fallback {
+		case Up:
+			return "^"
+		case Down:
+			return "v"
+		case Left:
+			return "<"
+		case Right:
+			return ">"
+		default:
+			return "*"
+		}
+	}
+}
+
+func extendedArrowHeadChar(dir direction, fallback direction) string {
+	switch dir {
+	case Up:
+		return "▲"
+	case Down:
+		return "▼"
+	case Left:
+		return "◄"
+	case Right:
+		return "►"
+	case UpperRight:
+		return "◥"
+	case UpperLeft:
+		return "◤"
+	case LowerRight:
+		return "◢"
+	case LowerLeft:
+		return "◣"
+	default:
+		switch fallback {
+		case Up:
+			return "▲"
+		case Down:
+			return "▼"
+		case Left:
+			return "◄"
+		case Right:
+			return "►"
+		case UpperRight:
+			return "◥"
+		case UpperLeft:
+			return "◤"
+		case LowerRight:
+			return "◢"
+		case LowerLeft:
+			return "◣"
+		default:
+			return "●"
+		}
+	}
+}
+
+func resolveHeadDirection(line []drawingCoord, fallback direction, atStart bool) direction {
+	if len(line) >= 2 {
+		from := line[0]
+		to := line[len(line)-1]
+		if atStart {
+			from, to = to, from
+		}
+		dir := determineDirection(genericCoord(from), genericCoord(to))
+		if dir != Middle {
+			return dir
+		}
+	}
+	return fallback
+}
+
+func (g *graph) applyArrowBodyStyle(d *drawing, lines [][]drawingCoord, dirs []direction, e *edge, labelDrawing *drawing) {
+	if e.style != arrowStyleDotted {
+		return
+	}
+
+	labelCoords := map[drawingCoord]struct{}{}
+	if e.text != "" && labelDrawing != nil {
+		maxX, maxY := getDrawingSize(labelDrawing)
+		for x := 0; x <= maxX; x++ {
+			for y := 0; y <= maxY; y++ {
+				if (*labelDrawing)[x][y] != " " {
+					labelCoords[drawingCoord{x, y}] = struct{}{}
+				}
+			}
+		}
+	}
+
+	junctionCounts := make(map[drawingCoord]int)
+	for _, line := range lines {
+		for _, coord := range line {
+			junctionCounts[coord]++
+		}
+	}
+
+	for idx, line := range lines {
+		if idx >= len(dirs) {
+			break
+		}
+		dir := dirs[idx]
+		if dir != Left && dir != Right {
+			continue
+		}
+		shouldDot := false
+		for _, coord := range line {
+			if (*d)[coord.x][coord.y] != "─" {
+				continue
+			}
+			if _, ok := labelCoords[coord]; ok {
+				continue
+			}
+			if junctionCounts[coord] > 1 {
+				continue
+			}
+			if shouldDot {
+				(*d)[coord.x][coord.y] = "·"
+			}
+			shouldDot = !shouldDot
+		}
+	}
+}
+
+func (g *graph) applyArrowEndCaps(d *drawing, lines [][]drawingCoord, e *edge) {
+	if (e.leftCap == arrowCapNone && e.rightCap == arrowCapNone) || len(lines) == 0 {
+		return
+	}
+
+	if e.leftCap != arrowCapNone {
+		hasHead := e.arrowDir == arrowDirBackward || e.arrowDir == arrowDirBoth
+		firstLine := lines[0]
+		g.placeEndCap(d, firstLine, e.leftCap, true, hasHead)
+	}
+
+	if e.rightCap != arrowCapNone {
+		hasHead := e.arrowDir == arrowDirForward || e.arrowDir == arrowDirBoth
+		lastLine := lines[len(lines)-1]
+		g.placeEndCap(d, lastLine, e.rightCap, false, hasHead)
+	}
+}
+
+func (g *graph) placeEndCap(d *drawing, line []drawingCoord, cap arrowEndCap, atStart bool, hasHead bool) {
+	if len(line) == 0 {
+		return
+	}
+	if hasHead && len(line) <= 1 {
+		return
+	}
+
+	char := capRune(cap)
+	if char == "" {
+		return
+	}
+
+	idx := 0
+	if atStart {
+		if hasHead && len(line) > 1 {
+			idx = 1
 		}
 	} else {
-		switch dir {
-		case Up:
-			char = "^"
-		case Down:
-			char = "v"
-		case Left:
-			char = "<"
-		case Right:
-			char = ">"
-		default:
-			switch fallback {
-			case Up:
-				char = "^"
-			case Down:
-				char = "v"
-			case Left:
-				char = "<"
-			case Right:
-				char = ">"
-			default:
-				char = "*"
-			}
+		idx = len(line) - 1
+		if hasHead && len(line) > 1 {
+			idx = len(line) - 2
+		}
+		if idx < 0 {
+			idx = 0
 		}
 	}
 
-	d[lastPos.x][lastPos.y] = char
-	return &d
+	coord := line[idx]
+	(*d)[coord.x][coord.y] = char
+}
+
+func capRune(cap arrowEndCap) string {
+	switch cap {
+	case arrowCapCircle:
+		return "○"
+	case arrowCapCross:
+		return "×"
+	default:
+		return ""
+	}
 }
 
 func (g *graph) drawCorners(path []gridCoord) *drawing {
