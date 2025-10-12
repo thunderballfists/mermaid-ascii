@@ -91,15 +91,15 @@ func sanitizeEdgeLabel(raw string) string {
 func parseEdgeSpecification(line string) (edgeSpec, bool) {
 	if match := edgeMidPipeLabelRegex.FindStringSubmatch(line); match != nil {
 		label := sanitizeEdgeLabel(match[2])
-		return edgeSpec{lhs: match[1], rhs: match[3], label: label, nearHead: label != ""}, true
+		return edgeSpec{lhs: match[1], rhs: match[3], label: label, nearHead: false}, true
 	}
 	if match := edgeMidTextLabelRegex.FindStringSubmatch(line); match != nil {
 		label := sanitizeEdgeLabel(match[2])
-		return edgeSpec{lhs: match[1], rhs: match[3], label: label, nearHead: label != ""}, true
+		return edgeSpec{lhs: match[1], rhs: match[3], label: label, nearHead: false}, true
 	}
 	if match := edgeTailPipeLabelRegex.FindStringSubmatch(line); match != nil {
 		label := sanitizeEdgeLabel(match[2])
-		return edgeSpec{lhs: match[1], rhs: match[3], label: label, nearHead: false}, true
+		return edgeSpec{lhs: match[1], rhs: match[3], label: label, nearHead: label != ""}, true
 	}
 	if match := edgeOpenLabelRegex.FindStringSubmatch(line); match != nil {
 		label := sanitizeEdgeLabel(match[2])
