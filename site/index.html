@@ -33,6 +33,12 @@
             Padding Y
             <input type="number" id="padding-y" min="0" step="1" />
           </label>
+          <label class="control" for="example-select">
+            Example
+            <select id="example-select">
+              <option value="">Choose example…</option>
+            </select>
+          </label>
           <label class="control" for="heads">
             Arrow heads
             <select id="heads">
@@ -56,6 +62,7 @@
     </main>
     <p id="status-message" class="status" role="status" aria-live="polite"></p>
     <script src="wasm_exec.js"></script>
+    <script src="examples.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

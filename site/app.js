@@ -4,6 +4,7 @@
     extended: document.getElementById("extended-toggle"),
     paddingX: document.getElementById("padding-x"),
     paddingY: document.getElementById("padding-y"),
+    exampleSelect: document.getElementById("example-select"),
     heads: document.getElementById("heads"),
     renderBtn: document.getElementById("render-btn"),
     clearBtn: document.getElementById("clear-btn"),
@@ -14,10 +15,19 @@
   };
 
   const SAMPLE_MERMAID = "graph LR\nA-->B";
+  const DEFAULT_PADDING = 5;
   const state = {
     go: null,
     renderFn: null,
     ready: false,
+  };
+
+  const URL_KEYS = {
+    mermaid: "m",
+    paddingX: "x",
+    paddingY: "y",
+    extended: "ext",
+    heads: "heads",
   };
 
   function setStatus(message, tone) {
@@ -54,6 +64,131 @@
       opts.heads = elements.heads.value;
     }
     return opts;
+  }
+
+  function readStateFromURL() {
+    const params = new URL(window.location.href).searchParams;
+    const parsed = {};
+    if (params.has(URL_KEYS.mermaid)) {
+      parsed.mermaid = params.get(URL_KEYS.mermaid) || "";
+    }
+    if (params.has(URL_KEYS.paddingX)) {
+      const parsedX = parseInt(params.get(URL_KEYS.paddingX), 10);
+      if (!Number.isNaN(parsedX)) {
+        parsed.paddingX = parsedX;
+      }
+    }
+    if (params.has(URL_KEYS.paddingY)) {
+      const parsedY = parseInt(params.get(URL_KEYS.paddingY), 10);
+      if (!Number.isNaN(parsedY)) {
+        parsed.paddingY = parsedY;
+      }
+    }
+    if (params.has(URL_KEYS.extended)) {
+      const raw = params.get(URL_KEYS.extended);
+      parsed.useExtended = raw === "1" || raw === "true";
+    }
+    if (params.has(URL_KEYS.heads)) {
+      parsed.heads = params.get(URL_KEYS.heads) || "";
+    }
+    return parsed;
+  }
+
+  function applyStateToForm(parsed) {
+    if (typeof parsed.mermaid === "string") {
+      elements.input.value = parsed.mermaid;
+    }
+    if (typeof parsed.paddingX === "number" && !Number.isNaN(parsed.paddingX)) {
+      elements.paddingX.value = String(parsed.paddingX);
+    }
+    if (typeof parsed.paddingY === "number" && !Number.isNaN(parsed.paddingY)) {
+      elements.paddingY.value = String(parsed.paddingY);
+    }
+    if (typeof parsed.useExtended === "boolean") {
+      elements.extended.checked = parsed.useExtended;
+    }
+    if (parsed.heads && elements.heads) {
+      const matchingOption = Array.from(elements.heads.options || []).some(
+        (opt) => opt.value === parsed.heads
+      );
+      if (matchingOption) {
+        elements.heads.value = parsed.heads;
+      }
+    }
+  }
+
+  function currentStateSnapshot() {
+    const paddingX = parseInt(elements.paddingX.value, 10);
+    const paddingY = parseInt(elements.paddingY.value, 10);
+    const heads = elements.heads ? elements.heads.value : "pointer";
+    return {
+      mermaid: elements.input.value || "",
+      paddingX: Number.isNaN(paddingX) ? null : paddingX,
+      paddingY: Number.isNaN(paddingY) ? null : paddingY,
+      useExtended: Boolean(elements.extended.checked),
+      heads,
+    };
+  }
+
+  function syncURLFromForm() {
+    if (typeof window === "undefined" || !window.history || !window.location) {
+      return;
+    }
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+    const snapshot = currentStateSnapshot();
+
+    if (snapshot.mermaid) {
+      params.set(URL_KEYS.mermaid, snapshot.mermaid);
+    } else {
+      params.delete(URL_KEYS.mermaid);
+    }
+
+    if (snapshot.paddingX !== null && snapshot.paddingX !== DEFAULT_PADDING) {
+      params.set(URL_KEYS.paddingX, String(snapshot.paddingX));
+    } else {
+      params.delete(URL_KEYS.paddingX);
+    }
+
+    if (snapshot.paddingY !== null && snapshot.paddingY !== DEFAULT_PADDING) {
+      params.set(URL_KEYS.paddingY, String(snapshot.paddingY));
+    } else {
+      params.delete(URL_KEYS.paddingY);
+    }
+
+    if (snapshot.useExtended) {
+      params.set(URL_KEYS.extended, "1");
+    } else {
+      params.delete(URL_KEYS.extended);
+    }
+
+    if (snapshot.heads && snapshot.heads !== "pointer") {
+      params.set(URL_KEYS.heads, snapshot.heads);
+    } else {
+      params.delete(URL_KEYS.heads);
+    }
+
+    window.history.replaceState(null, "", url);
+  }
+
+  function populateExamples() {
+    if (!elements.exampleSelect) {
+      return;
+    }
+    const examples = Array.isArray(window.MERMAID_ASCII_EXAMPLES)
+      ? window.MERMAID_ASCII_EXAMPLES
+      : [];
+
+    while (elements.exampleSelect.options.length > 1) {
+      elements.exampleSelect.remove(1);
+    }
+
+    examples.forEach((example, index) => {
+      const option = document.createElement("option");
+      option.value = String(index);
+      option.textContent = example.name;
+      elements.exampleSelect.appendChild(option);
+    });
   }
 
   async function loadWasm() {
@@ -115,6 +250,7 @@
     if (response && typeof response === "object" && "error" in response) {
       updateOutput(response.error || "Unknown error", true);
       setStatus("Render failed.", "error");
+      syncURLFromForm();
       return;
     }
 
@@ -127,12 +263,23 @@
 
     updateOutput(text, false);
     setStatus("Render complete.", "success");
+    syncURLFromForm();
   }
 
   function clearAll() {
     elements.input.value = "";
+    elements.extended.checked = false;
+    if (elements.heads) {
+      elements.heads.value = "pointer";
+    }
+    elements.paddingX.value = String(DEFAULT_PADDING);
+    elements.paddingY.value = String(DEFAULT_PADDING);
+    if (elements.exampleSelect) {
+      elements.exampleSelect.value = "";
+    }
     updateOutput("", false);
     setStatus("Cleared.");
+    syncURLFromForm();
   }
 
   async function copyOutput() {
@@ -171,16 +318,51 @@
     elements.clearBtn.addEventListener("click", clearAll);
     elements.copyBtn.addEventListener("click", copyOutput);
     elements.downloadBtn.addEventListener("click", downloadOutput);
+    if (elements.exampleSelect) {
+      elements.exampleSelect.addEventListener("change", () => {
+        const selected = elements.exampleSelect.value;
+        const examples = Array.isArray(window.MERMAID_ASCII_EXAMPLES)
+          ? window.MERMAID_ASCII_EXAMPLES
+          : [];
+        const idx = parseInt(selected, 10);
+        if (!Number.isNaN(idx) && examples[idx]) {
+          elements.input.value = examples[idx].mermaid;
+          render();
+        }
+      });
+    }
+    [elements.extended, elements.paddingX, elements.paddingY, elements.heads]
+      .filter(Boolean)
+      .forEach((el) => {
+        el.addEventListener("change", () => {
+          syncURLFromForm();
+        });
+      });
   }
 
   document.addEventListener("DOMContentLoaded", () => {
     elements.input.value = SAMPLE_MERMAID;
-    elements.paddingX.value = "5";
-    elements.paddingY.value = "5";
+    elements.paddingX.value = String(DEFAULT_PADDING);
+    elements.paddingY.value = String(DEFAULT_PADDING);
     if (elements.heads) {
       elements.heads.value = "pointer";
+    }
+    populateExamples();
+    const initialState = readStateFromURL();
+    if (Object.keys(initialState).length > 0) {
+      applyStateToForm(initialState);
     }
     attachEvents();
     loadWasm();
   });
+
+  if (typeof window !== "undefined") {
+    window.__MERMAID_ASCII_APP__ = {
+      readStateFromURL,
+      applyStateToForm,
+      currentStateSnapshot,
+      syncURLFromForm,
+      populateExamples,
+    };
+  }
 })();
