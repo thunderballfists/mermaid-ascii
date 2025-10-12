@@ -33,7 +33,6 @@ type textEdge struct {
 	child         textNode
 	label         string
 	labelNearHead bool
-	style         arrowBodyStyle
 	edgeStyle     EdgeStyle
 	arrowDir      arrowDirection
 	leftCap       arrowEndCap
@@ -58,7 +57,7 @@ type textSubgraph struct {
 
 var nodeWithClassPattern = regexp.MustCompile(`^(.+):::(.+)$`)
 
-var edgeOperatorPattern = `<?[ox]?[-.=]+(?:[ox]?[-.=]+)*[ox]?>?`
+var edgeOperatorPattern = `<?[ox)]?[-.=]+(?:[ox)]?[-.=]+)*[ox)]?>?`
 
 var edgeTailPipeLabelRegex = regexp.MustCompile(`^(.+?)\s*(` + edgeOperatorPattern + `)\s*\|(.+?)\|\s*(.+)$`)
 var edgeMidPipeLabelRegex = regexp.MustCompile(`^(.+?)\s*--\s*\|(.+?)\|\s*(` + edgeOperatorPattern + `)\s*(.+)$`)
@@ -72,7 +71,6 @@ type edgeSpec struct {
 	operator  string
 	label     string
 	nearHead  bool
-	style     arrowBodyStyle
 	edgeStyle EdgeStyle
 	direction arrowDirection
 	leftCap   arrowEndCap
@@ -80,20 +78,20 @@ type edgeSpec struct {
 	lenHint   int
 }
 
-func classifyEdgeOperator(raw string) (arrowBodyStyle, arrowDirection, arrowEndCap, arrowEndCap, int) {
+func classifyEdgeOperator(raw string) (EdgeStyle, arrowDirection, arrowEndCap, arrowEndCap, int) {
 	operator := strings.TrimSpace(raw)
 	if operator == "" {
-		return arrowStyleSolid, arrowDirOpen, arrowCapNone, arrowCapNone, 0
+		return StyleSolid, arrowDirOpen, arrowCapNone, arrowCapNone, 0
 	}
 
-	var style arrowBodyStyle
+	style := StyleSolid
 	switch {
 	case strings.Contains(operator, "="):
-		style = arrowStyleThick
+		style = StyleThick
 	case strings.Contains(operator, "."):
-		style = arrowStyleDotted
+		style = StyleDotted
 	default:
-		style = arrowStyleSolid
+		style = StyleSolid
 	}
 
 	hasLeft := strings.Contains(operator, "<")
@@ -143,6 +141,8 @@ func classifyEdgeOperator(raw string) (arrowBodyStyle, arrowDirection, arrowEndC
 				leftCap = arrowCapCircle
 			case 'x':
 				leftCap = arrowCapCross
+			case ')':
+				leftCap = arrowCapDiamond
 			}
 		}
 	}
@@ -154,28 +154,36 @@ func classifyEdgeOperator(raw string) (arrowBodyStyle, arrowDirection, arrowEndC
 				rightCap = arrowCapCircle
 			case 'x':
 				rightCap = arrowCapCross
+			case ')':
+				rightCap = arrowCapDiamond
 			}
 		}
 	}
 
 	if rightCap == arrowCapNone {
 		for i := len(runes) - 1; i >= 0; i-- {
-			if runes[i] != 'o' && runes[i] != 'x' {
+			if runes[i] != 'o' && runes[i] != 'x' && runes[i] != ')' {
 				continue
 			}
 			if firstBody != -1 && i > firstBody {
-				if runes[i] == 'o' {
+				switch runes[i] {
+				case 'o':
 					rightCap = arrowCapCircle
-				} else {
+				case 'x':
 					rightCap = arrowCapCross
+				case ')':
+					rightCap = arrowCapDiamond
 				}
 				break
 			}
 			if firstBody != -1 && i < firstBody {
-				if runes[i] == 'o' {
+				switch runes[i] {
+				case 'o':
 					leftCap = arrowCapCircle
-				} else {
+				case 'x':
 					leftCap = arrowCapCross
+				case ')':
+					leftCap = arrowCapDiamond
 				}
 				break
 			}
@@ -194,18 +202,13 @@ func buildEdgeSpec(lhs, rhs, operator, label string, nearHead bool) edgeSpec {
 	rhs = strings.TrimSpace(rhs)
 	operator = strings.TrimSpace(operator)
 	style, direction, leftCap, rightCap, lenHint := classifyEdgeOperator(operator)
-	edgeStyle := StyleSolid
-	if strings.Contains(operator, "=") {
-		edgeStyle = StyleThick
-	}
 	return edgeSpec{
 		lhs:       lhs,
 		rhs:       rhs,
 		operator:  operator,
 		label:     label,
 		nearHead:  nearHead,
-		style:     style,
-		edgeStyle: edgeStyle,
+		edgeStyle: style,
 		direction: direction,
 		leftCap:   leftCap,
 		rightCap:  rightCap,
@@ -510,7 +513,6 @@ func setArrowWithSpec(lhs, rhs []textNode, spec edgeSpec, data *orderedmap.Order
 				child:         r,
 				label:         spec.label,
 				labelNearHead: spec.nearHead,
-				style:         spec.style,
 				edgeStyle:     spec.edgeStyle,
 				arrowDir:      spec.direction,
 				leftCap:       spec.leftCap,

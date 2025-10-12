@@ -8,18 +8,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type arrowBodyStyle int
-
-const (
-	arrowStyleSolid arrowBodyStyle = iota
-	arrowStyleDotted
-	arrowStyleThick
-)
-
 type EdgeStyle int
 
 const (
 	StyleSolid EdgeStyle = iota
+	StyleDotted
+	StyleDashed
 	StyleThick
 )
 
@@ -38,6 +32,7 @@ const (
 	arrowCapNone arrowEndCap = iota
 	arrowCapCircle
 	arrowCapCross
+	arrowCapDiamond
 )
 
 type priorityQueueItem struct {
@@ -143,16 +138,16 @@ func (g *graph) drawArrow(from gridCoord, to gridCoord, e *edge) (*drawing, *dra
 	}
 	log.Debugf("Drawing arrow from %v to %v with path %v", from, to, e.path)
 	dLabel := g.drawArrowLabel(e)
-	dPath, linesDrawn, lineDirs := g.drawPath(e.path, e.edgeStyle)
+	dPath, linesDrawn, lineDirs := g.drawPath(e.path, e)
 	if !useAscii {
 		g.applyArrowBodyStyle(dPath, linesDrawn, lineDirs, e, dLabel)
 	}
-	dBoxStart := g.drawBoxStart(e.path, linesDrawn[0])
+	dBoxStart := g.drawBoxStart(e, linesDrawn[0])
 	dArrowHead := g.drawArrowHead(linesDrawn, lineDirs, e)
 	if !useAscii {
 		g.applyArrowEndCaps(dArrowHead, linesDrawn, e)
 	}
-	dCorners := g.drawCorners(e.path)
+	dCorners := g.drawCorners(e)
 	return dPath, dBoxStart, dArrowHead, dCorners, dLabel
 }
 
@@ -183,7 +178,7 @@ func mergePath(path []gridCoord) []gridCoord {
 	return newPath
 }
 
-func (g *graph) drawPath(path []gridCoord, edgeStyle EdgeStyle) (*drawing, [][]drawingCoord, []direction) {
+func (g *graph) drawPath(path []gridCoord, e *edge) (*drawing, [][]drawingCoord, []direction) {
 	d := copyCanvas(g.drawing)
 	previousCoord := path[0]
 	linesDrawn := make([][]drawingCoord, 0)
@@ -197,7 +192,7 @@ func (g *graph) drawPath(path []gridCoord, edgeStyle EdgeStyle) (*drawing, [][]d
 			continue
 		}
 		dir := determineDirection(genericCoord(previousCoord), genericCoord(nextCoord))
-		s := d.drawLine(previousDrawingCoord, nextDrawingCoord, 1, -1, edgeStyle)
+		s := d.drawLine(previousDrawingCoord, nextDrawingCoord, 1, -1, e)
 		if len(s) == 0 {
 			// drawLine may return no coords if offsets collapse the line. Use at least one point so arrow and junction logic
 			// can still infer a direction.
@@ -210,25 +205,29 @@ func (g *graph) drawPath(path []gridCoord, edgeStyle EdgeStyle) (*drawing, [][]d
 	return d, linesDrawn, lineDirs
 }
 
-func (g *graph) drawBoxStart(path []gridCoord, firstLine []drawingCoord) *drawing {
+func (g *graph) drawBoxStart(e *edge, firstLine []drawingCoord) *drawing {
 	d := *(copyCanvas(g.drawing))
+	if len(e.path) < 2 {
+		return &d
+	}
 	from := firstLine[0]
-	dir := determineDirection(genericCoord(path[0]), genericCoord(path[1]))
-	log.Debugf("Drawing box start at %v with direction %v for line %v", from, dir, path)
+	dir := determineDirection(genericCoord(e.path[0]), genericCoord(e.path[1]))
+	log.Debugf("Drawing box start at %v with direction %v for line %v", from, dir, e.path)
 
 	if useAscii {
 		return &d
 	}
 
+	pal := buildPalette(e.flowOptions())
 	switch dir {
 	case Up:
-		d[from.x][from.y+1] = "┴"
+		d[from.x][from.y+1] = pal.TeeDown
 	case Down:
-		d[from.x][from.y-1] = "┬"
+		d[from.x][from.y-1] = pal.TeeUp
 	case Left:
-		d[from.x+1][from.y] = "┤"
+		d[from.x+1][from.y] = pal.TeeRight
 	case Right:
-		d[from.x-1][from.y] = "├"
+		d[from.x-1][from.y] = pal.TeeLeft
 	}
 	return &d
 }
@@ -260,14 +259,17 @@ func (g *graph) drawArrowHead(lines [][]drawingCoord, lineDirs []direction, e *e
 		return &d
 	}
 
+	pal := buildPalette(e.flowOptions())
 	endHasHead := e.arrowDir == arrowDirForward || e.arrowDir == arrowDirBoth
 	startHasHead := e.arrowDir == arrowDirBackward || e.arrowDir == arrowDirBoth
 
 	if endHasHead && len(lastLine) > 0 {
 		dir := resolveHeadDirection(lastLine, lastFallback, false)
-		char := extendedArrowHeadChar(dir, lastFallback)
-		target := lastLine[len(lastLine)-1]
-		d[target.x][target.y] = char
+		char := pal.arrowHead(dir, lastFallback)
+		if char != "" {
+			target := lastLine[len(lastLine)-1]
+			d[target.x][target.y] = char
+		}
 	}
 
 	if startHasHead && len(lines) > 0 {
@@ -279,9 +281,11 @@ func (g *graph) drawArrowHead(lines [][]drawingCoord, lineDirs []direction, e *e
 			}
 			startFallback := firstFallback.getOpposite()
 			dir := resolveHeadDirection(firstLine, startFallback, true)
-			char := extendedArrowHeadChar(dir, startFallback)
-			start := firstLine[0]
-			d[start.x][start.y] = char
+			char := pal.arrowHead(dir, startFallback)
+			if char != "" {
+				start := firstLine[0]
+				d[start.x][start.y] = char
+			}
 		}
 	}
 
@@ -314,48 +318,6 @@ func asciiArrowHead(dir direction, fallback direction) string {
 	}
 }
 
-func extendedArrowHeadChar(dir direction, fallback direction) string {
-	switch dir {
-	case Up:
-		return "▲"
-	case Down:
-		return "▼"
-	case Left:
-		return "◄"
-	case Right:
-		return "►"
-	case UpperRight:
-		return "◥"
-	case UpperLeft:
-		return "◤"
-	case LowerRight:
-		return "◢"
-	case LowerLeft:
-		return "◣"
-	default:
-		switch fallback {
-		case Up:
-			return "▲"
-		case Down:
-			return "▼"
-		case Left:
-			return "◄"
-		case Right:
-			return "►"
-		case UpperRight:
-			return "◥"
-		case UpperLeft:
-			return "◤"
-		case LowerRight:
-			return "◢"
-		case LowerLeft:
-			return "◣"
-		default:
-			return "●"
-		}
-	}
-}
-
 func resolveHeadDirection(line []drawingCoord, fallback direction, atStart bool) direction {
 	if len(line) >= 2 {
 		from := line[0]
@@ -372,7 +334,7 @@ func resolveHeadDirection(line []drawingCoord, fallback direction, atStart bool)
 }
 
 func (g *graph) applyArrowBodyStyle(d *drawing, lines [][]drawingCoord, dirs []direction, e *edge, labelDrawing *drawing) {
-	if e.style != arrowStyleDotted {
+	if e.edgeStyle != StyleDotted {
 		return
 	}
 
@@ -444,32 +406,88 @@ func (g *graph) placeEndCap(d *drawing, line []drawingCoord, cap arrowEndCap, at
 	if len(line) == 0 {
 		return
 	}
-	if hasHead && len(line) <= 1 {
-		return
-	}
 
 	char := capRune(cap)
 	if char == "" {
 		return
 	}
 
+	target, ok := g.endCapTarget(line, atStart, hasHead)
+	if !ok {
+		return
+	}
+
+	if target.x < 0 || target.y < 0 {
+		return
+	}
+
+	d.increaseSize(target.x, target.y)
+	(*d)[target.x][target.y] = char
+}
+
+func (g *graph) endCapTarget(line []drawingCoord, atStart bool, hasHead bool) (drawingCoord, bool) {
+	if len(line) == 0 {
+		return drawingCoord{}, false
+	}
+
 	idx := 0
+	var dir direction
 	if atStart {
+		idx = 0
 		if hasHead && len(line) > 1 {
 			idx = 1
 		}
-	} else {
-		idx = len(line) - 1
-		if hasHead && len(line) > 1 {
-			idx = len(line) - 2
+		base := line[idx]
+		if idx+1 < len(line) {
+			dir = determineDirection(genericCoord(line[idx]), genericCoord(line[idx+1]))
+		} else if idx > 0 {
+			dir = determineDirection(genericCoord(line[idx-1]), genericCoord(line[idx]))
+		} else {
+			dir = Middle
 		}
-		if idx < 0 {
-			idx = 0
+		moveDir := dir.getOpposite()
+		dx, dy, ok := directionStep(moveDir)
+		if !ok {
+			return drawingCoord{}, false
 		}
+		return drawingCoord{base.x + dx, base.y + dy}, true
 	}
 
-	coord := line[idx]
-	(*d)[coord.x][coord.y] = char
+	idx = len(line) - 1
+	if hasHead && len(line) > 1 {
+		idx = len(line) - 2
+	}
+	if idx < 0 {
+		idx = 0
+	}
+	base := line[idx]
+	if idx > 0 {
+		dir = determineDirection(genericCoord(line[idx-1]), genericCoord(line[idx]))
+	} else if idx+1 < len(line) {
+		dir = determineDirection(genericCoord(line[idx]), genericCoord(line[idx+1]))
+	} else {
+		dir = Middle
+	}
+	dx, dy, ok := directionStep(dir)
+	if !ok {
+		return drawingCoord{}, false
+	}
+	return drawingCoord{base.x + dx, base.y + dy}, true
+}
+
+func directionStep(dir direction) (int, int, bool) {
+	switch dir {
+	case Up:
+		return 0, -1, true
+	case Down:
+		return 0, 1, true
+	case Left:
+		return -1, 0, true
+	case Right:
+		return 1, 0, true
+	default:
+		return 0, 0, false
+	}
 }
 
 func capRune(cap arrowEndCap) string {
@@ -478,13 +496,20 @@ func capRune(cap arrowEndCap) string {
 		return "○"
 	case arrowCapCross:
 		return "×"
+	case arrowCapDiamond:
+		return "◇"
 	default:
 		return ""
 	}
 }
 
-func (g *graph) drawCorners(path []gridCoord) *drawing {
+func (g *graph) drawCorners(e *edge) *drawing {
 	d := copyCanvas(g.drawing)
+	path := e.path
+	var pal palette
+	if !useAscii {
+		pal = buildPalette(e.flowOptions())
+	}
 	for idx, coord := range path {
 		// Skip the first and last step
 		if idx == 0 || idx == len(path)-1 {
@@ -496,21 +521,21 @@ func (g *graph) drawCorners(path []gridCoord) *drawing {
 		nextDir := determineDirection(genericCoord(coord), genericCoord(path[idx+1]))
 
 		var corner string
-		if !useAscii {
+		if useAscii {
+			corner = "+"
+		} else {
 			switch {
 			case (prevDir == Right && nextDir == Down) || (prevDir == Up && nextDir == Left):
-				corner = "┐"
+				corner = pal.CornerTopRight
 			case (prevDir == Right && nextDir == Up) || (prevDir == Down && nextDir == Left):
-				corner = "┘"
+				corner = pal.CornerBottomRight
 			case (prevDir == Left && nextDir == Down) || (prevDir == Up && nextDir == Right):
-				corner = "┌"
+				corner = pal.CornerTopLeft
 			case (prevDir == Left && nextDir == Up) || (prevDir == Down && nextDir == Right):
-				corner = "└"
+				corner = pal.CornerBottomLeft
 			default:
-				corner = "+"
+				corner = pal.TeeCross
 			}
-		} else {
-			corner = "+"
 		}
 
 		(*d)[drawingCoord.x][drawingCoord.y] = corner
