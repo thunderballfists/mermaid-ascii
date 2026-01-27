@@ -63,24 +63,40 @@ func (d *drawing) drawLine(from drawingCoord, to drawingCoord, offsetFrom int, o
 	if !useAscii {
 		switch direction {
 		case Up:
+			vertChar := "│"
+			if edgeStyle == StyleThick {
+				vertChar = "║"
+			}
 			for y := from.y - offsetFrom; y >= to.y-offsetTo; y-- {
 				drawnCoords = append(drawnCoords, drawingCoord{from.x, y})
-				(*d)[from.x][y] = "│"
+				(*d)[from.x][y] = vertChar
 			}
 		case Down:
+			vertChar := "│"
+			if edgeStyle == StyleThick {
+				vertChar = "║"
+			}
 			for y := from.y + offsetFrom; y <= to.y+offsetTo; y++ {
 				drawnCoords = append(drawnCoords, drawingCoord{from.x, y})
-				(*d)[from.x][y] = "│"
+				(*d)[from.x][y] = vertChar
 			}
 		case Left:
+			horizChar := "─"
+			if edgeStyle == StyleThick {
+				horizChar = "═"
+			}
 			for x := from.x - offsetFrom; x >= to.x-offsetTo; x-- {
 				drawnCoords = append(drawnCoords, drawingCoord{x, from.y})
-				(*d)[x][from.y] = "─"
+				(*d)[x][from.y] = horizChar
 			}
 		case Right:
+			horizChar := "─"
+			if edgeStyle == StyleThick {
+				horizChar = "═"
+			}
 			for x := from.x + offsetFrom; x <= to.x+offsetTo; x++ {
 				drawnCoords = append(drawnCoords, drawingCoord{x, from.y})
-				(*d)[x][from.y] = "─"
+				(*d)[x][from.y] = horizChar
 			}
 		case UpperLeft:
 			for x, y := from.x, from.y-offsetFrom; x >= to.x-offsetTo && y >= to.y-offsetTo; x, y = x-1, y-1 {

@@ -317,13 +317,13 @@ func asciiArrowHead(dir direction, fallback direction) string {
 func extendedArrowHeadChar(dir direction, fallback direction) string {
 	switch dir {
 	case Up:
-		return "▲"
+		return "↑"
 	case Down:
-		return "▼"
+		return "↓"
 	case Left:
-		return "◄"
+		return "←"
 	case Right:
-		return "►"
+		return "→"
 	case UpperRight:
 		return "◥"
 	case UpperLeft:
@@ -335,13 +335,13 @@ func extendedArrowHeadChar(dir direction, fallback direction) string {
 	default:
 		switch fallback {
 		case Up:
-			return "▲"
+			return "↑"
 		case Down:
-			return "▼"
+			return "↓"
 		case Left:
-			return "◄"
+			return "←"
 		case Right:
-			return "►"
+			return "→"
 		case UpperRight:
 			return "◥"
 		case UpperLeft:
@@ -403,12 +403,28 @@ func (g *graph) applyArrowBodyStyle(d *drawing, lines [][]drawingCoord, dirs []d
 		if dir != Left && dir != Right {
 			continue
 		}
+		if len(line) <= 2 {
+			continue
+		}
+		lineHasLabel := false
+		skipCoords := map[drawingCoord]struct{}{}
+		for _, coord := range line {
+			if _, ok := labelCoords[coord]; ok {
+				lineHasLabel = true
+				skipCoords[coord] = struct{}{}
+				skipCoords[drawingCoord{coord.x - 1, coord.y}] = struct{}{}
+				skipCoords[drawingCoord{coord.x + 1, coord.y}] = struct{}{}
+			}
+		}
+		if lineHasLabel && len(line) <= len(e.text)+2 {
+			continue
+		}
 		shouldDot := false
 		for _, coord := range line {
 			if (*d)[coord.x][coord.y] != "─" {
 				continue
 			}
-			if _, ok := labelCoords[coord]; ok {
+			if _, skip := skipCoords[coord]; skip {
 				continue
 			}
 			if junctionCounts[coord] > 1 {
@@ -428,23 +444,18 @@ func (g *graph) applyArrowEndCaps(d *drawing, lines [][]drawingCoord, e *edge) {
 	}
 
 	if e.leftCap != arrowCapNone {
-		hasHead := e.arrowDir == arrowDirBackward || e.arrowDir == arrowDirBoth
 		firstLine := lines[0]
-		g.placeEndCap(d, firstLine, e.leftCap, true, hasHead)
+		g.placeEndCap(d, firstLine, e.leftCap, true)
 	}
 
 	if e.rightCap != arrowCapNone {
-		hasHead := e.arrowDir == arrowDirForward || e.arrowDir == arrowDirBoth
 		lastLine := lines[len(lines)-1]
-		g.placeEndCap(d, lastLine, e.rightCap, false, hasHead)
+		g.placeEndCap(d, lastLine, e.rightCap, false)
 	}
 }
 
-func (g *graph) placeEndCap(d *drawing, line []drawingCoord, cap arrowEndCap, atStart bool, hasHead bool) {
+func (g *graph) placeEndCap(d *drawing, line []drawingCoord, cap arrowEndCap, atStart bool) {
 	if len(line) == 0 {
-		return
-	}
-	if hasHead && len(line) <= 1 {
 		return
 	}
 
@@ -453,23 +464,69 @@ func (g *graph) placeEndCap(d *drawing, line []drawingCoord, cap arrowEndCap, at
 		return
 	}
 
-	idx := 0
+	var base drawingCoord
+	var dir direction
 	if atStart {
-		if hasHead && len(line) > 1 {
-			idx = 1
+		base = line[0]
+		if len(line) < 2 {
+			return
 		}
+		dir = determineDirection(genericCoord(line[0]), genericCoord(line[1]))
+		if dir == Middle {
+			return
+		}
+		dir = dir.getOpposite()
 	} else {
-		idx = len(line) - 1
-		if hasHead && len(line) > 1 {
-			idx = len(line) - 2
+		base = line[len(line)-1]
+		if len(line) < 2 {
+			return
 		}
-		if idx < 0 {
-			idx = 0
+		dir = determineDirection(genericCoord(line[len(line)-2]), genericCoord(line[len(line)-1]))
+		if dir == Middle {
+			return
 		}
 	}
 
-	coord := line[idx]
-	(*d)[coord.x][coord.y] = char
+	target, ok := stepDrawingCoord(base, dir)
+	if !ok {
+		return
+	}
+	if target.x < 0 || target.y < 0 {
+		return
+	}
+	d.increaseSize(target.x, target.y)
+	(*d)[target.x][target.y] = char
+}
+
+func stepDrawingCoord(coord drawingCoord, dir direction) (drawingCoord, bool) {
+	dx, dy, ok := directionDelta(dir)
+	if !ok {
+		return drawingCoord{}, false
+	}
+	return drawingCoord{coord.x + dx, coord.y + dy}, true
+}
+
+func directionDelta(dir direction) (int, int, bool) {
+	switch dir {
+	case Up:
+		return 0, -1, true
+	case Down:
+		return 0, 1, true
+	case Left:
+		return -1, 0, true
+	case Right:
+		return 1, 0, true
+	case UpperRight:
+		return 1, -1, true
+	case UpperLeft:
+		return -1, -1, true
+	case LowerRight:
+		return 1, 1, true
+	case LowerLeft:
+		return -1, 1, true
+	default:
+		return 0, 0, false
+	}
 }
 
 func capRune(cap arrowEndCap) string {
