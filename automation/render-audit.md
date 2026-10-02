@@ -13,11 +13,11 @@ go test ./cmd -run TestRenderAuditMatrix -count=1 -v
 go test ./... -count=1
 ```
 
-`cmd/render_audit_test.go` exercises 12 small sources in both character modes,
-with padding 1 and 5 and pointer/open/wide/none heads: 192 configurations.
+`cmd/render_audit_test.go` exercises 13 small sources in both character modes,
+with padding 1 and 5 and pointer/open/wide/none heads: 208 configurations.
 Straight horizontal/vertical arrows and incoming branches are controls. Other
 cases cover undirected/bidirectional edges, mixed stems, cycles, self-loops,
-parallel labels, Unicode labels, long vertical labels, and nested groups.
+parallel labels, Unicode/grapheme labels, long vertical labels, and nested groups.
 
 The checks are deliberately bounded to this corpus: head counts, literal label
 preservation, group-border/node intersections, a mixed junction's local
@@ -35,6 +35,7 @@ do not regenerate the existing goldens to erase a discrepancy.
 | `A-->B; A-.->C; A==>D` | A dotted branch uses `└` on a double vertical trunk that continues above and below it. The glyph drops the upward connection. | Unicode only. `mergeJunctions` and `junctionChars` handle light glyphs, not mixed-weight connectivity. |
 | `A-->|one|B; A-->|two|B` | Only `two` and one head remain. | Both modes. The paths are identical; later labels/heads overwrite earlier edges. |
 | `A[Café]-->|é|B[東京]` | Labels become `CafÃ©`, `Ã©`, and byte-derived CJK mojibake; box widths are inflated. | Both modes. `setColumnWidth`, `drawBox`, and `drawText` use byte lengths/indexing rather than graphemes and display cells. |
+| `A[é]-->|👩‍💻|B[🙂]` | Combining-mark and emoji labels are also corrupted. | Both modes. Added during the spike to match its display-cell measurement probes. |
 | Nested Outer/Inner groups, padding 1 | Group frames touch/cross node boxes; the external D node straddles Outer's frame. | Both modes. Node placement precedes group extents; group border clearance is not reserved. Padding 5 avoids this specific overlap. |
 | `graph LR; A-->A`, padding 1 | Index-out-of-range panic. | Both modes. Path/canvas allocation fails at tight spacing; `increaseGridSizeForPath` allocates half-padding (zero at 1), while `drawLine` assumes drawable coordinates. Padding 5 succeeds. |
 | `graph LR; A---B` | ASCII emits an arrowhead for an undirected edge. | ASCII's `drawArrowHead` does not consult `arrowDir`; Unicode respects it. |

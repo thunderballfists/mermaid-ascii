@@ -52,6 +52,7 @@ func TestRenderAuditMatrix(t *testing.T) {
 		{"self-loop", "graph LR\nA-->A"},
 		{"parallel", "graph LR\nA-->|one|B\nA-->|two|B"},
 		{"unicode-labels", "graph LR\nA[Café]-->|é|B[東京]"},
+		{"grapheme-labels", "graph LR\nA[e\u0301]-->|👩‍💻|B[🙂]"},
 		{"long-label", "graph TD\nA-->|a long edge label|B"},
 		{"nested", "graph LR\nsubgraph Outer\nA\nsubgraph Inner\nB-->C\nend\nA-->B\nend\nC-->D"},
 	}
@@ -146,7 +147,7 @@ func knownAuditDefects(name string, ascii bool, padding int, heads HeadStyle) []
 	if name == "undirected" && ascii || name == "bidirectional" && (ascii || padding == 1 && hasHeads) || (name == "cycle" && padding == 1 || name == "parallel" || name == "long-label" && padding == 1) && hasHeads {
 		defects = append(defects, "arrowhead-count")
 	}
-	if name == "parallel" || name == "unicode-labels" {
+	if name == "parallel" || name == "unicode-labels" || name == "grapheme-labels" {
 		defects = append(defects, "edge-label-lost")
 	}
 	if name == "nested" && padding == 1 {
@@ -155,7 +156,7 @@ func knownAuditDefects(name string, ascii bool, padding int, heads HeadStyle) []
 	if name == "mixed-branches" && !ascii {
 		defects = append(defects, "mixed-junction")
 	}
-	if name == "unicode-labels" {
+	if name == "unicode-labels" || name == "grapheme-labels" {
 		defects = append(defects, "node-label-lost")
 	}
 	return defects
