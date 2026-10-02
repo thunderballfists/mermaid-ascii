@@ -76,6 +76,20 @@ func TestRenderAuditMatrix(t *testing.T) {
 	}
 }
 
+func TestRenderAuditTextUIEmbeddingDemo(t *testing.T) {
+	source := "graph LR\nA[Café]-->|é|B[東京]\nB-->C[Done]"
+	for _, ascii := range []bool{true, false} {
+		t.Run(fmt.Sprintf("ascii=%v", ascii), func(t *testing.T) {
+			rendered, output, panicValue := captureAuditRender(t, source, ascii, 5, HeadStylePointer)
+			expected := []string{"edge-label-lost", "node-label-lost"}
+			actual := auditRenderDefects(rendered, output, panicValue, ascii, HeadStylePointer)
+			if !reflect.DeepEqual(actual, expected) {
+				t.Fatalf("embedding demo characterization changed: defects=%v expected=%v panic=%v\n%s", actual, expected, panicValue, output)
+			}
+		})
+	}
+}
+
 func auditRenderDefects(rendered graph, output string, panicValue any, ascii bool, heads HeadStyle) []string {
 	if panicValue != nil {
 		return []string{"render-panic"}

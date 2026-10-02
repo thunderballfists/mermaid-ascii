@@ -25,6 +25,11 @@ connectivity, and captured render panics. They are not a general graph verifier.
 Known-defect assertions must be updated explicitly when an intentional fix lands;
 do not regenerate the existing goldens to erase a discrepancy.
 
+`TestRenderAuditTextUIEmbeddingDemo` additionally characterizes the three-node
+Unicode demo from the [native embedding spike](textui-embedding-spike.md) in both
+modes at padding 5: two checks outside the 208-configuration matrix. Its legacy
+label corruption remains reproducible; no goldens are added or changed.
+
 ## Confirmed defects
 
 | Case | Observation | Scope / cause |

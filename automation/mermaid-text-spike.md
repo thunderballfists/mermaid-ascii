@@ -2,6 +2,11 @@
 
 Date: 2026-10-02. Audit commit: `92f9d34`.
 
+The subsequent [TextUI embedding spike](textui-embedding-spike.md) revises the
+recommendation to integration-first reuse of TextUI/Textual and an existing
+graph backend. This earlier report records the TypeScript seam experiment, not
+the selected implementation language or a production redesign.
+
 ## Decision
 
 **A TypeScript text renderer is feasible; a drop-in alternate Mermaid renderer
