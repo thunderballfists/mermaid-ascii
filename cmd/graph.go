@@ -579,7 +579,7 @@ func (g *graph) draw() *drawing {
 	g.drawing = mergeDrawings(g.drawing, drawingCoord{0, 0}, cornerDrawings...)
 	g.drawing = mergeDrawings(g.drawing, drawingCoord{0, 0}, arrowHeadDrawings...)
 	g.drawing = mergeDrawings(g.drawing, drawingCoord{0, 0}, boxStartDrawings...)
-	g.drawing = mergeDrawings(g.drawing, drawingCoord{0, 0}, labelDrawings...)
+	g.drawing = overlayDrawings(g.drawing, drawingCoord{0, 0}, labelDrawings...)
 
 	// Draw subgraph labels LAST so they don't get overwritten by arrows
 	g.drawSubgraphLabels()
@@ -608,7 +608,7 @@ func (g *graph) drawSubgraphLabels() {
 			continue
 		}
 		labelDrawing, offset := drawSubgraphLabel(sg, *g)
-		g.drawing = mergeDrawings(g.drawing, offset, labelDrawing)
+		g.drawing = overlayDrawings(g.drawing, offset, labelDrawing)
 	}
 }
 

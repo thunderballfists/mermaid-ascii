@@ -2,9 +2,10 @@
 
 Date: 2026-10-02. Baseline: `59b6368` (M9).
 
-This is a characterization audit, not a rendering fix. Production code and all
-ASCII/Unicode goldens remain unchanged. Passing audit tests mean the observations
-below are reproducible; they do not mean the affected output is correct.
+The original characterization audit left production code and all goldens
+unchanged. The bounded corrections below describe subsequent repairs. Passing
+audit tests still reproduce the remaining defects; they do not mean all affected
+output is correct. ASCII outputs and goldens remain unchanged.
 
 ## Reproduce
 
@@ -44,8 +45,34 @@ Regression tests cover accents, combining marks, CJK, emoji/flags, zero-width
 text, labels merged over routes, colored labels, and long group titles. Audit
 expectations remove only the extended-mode label-loss defects. ASCII remains
 byte-for-byte compatible, including its existing Unicode-label defects, and all
-existing ASCII/extended goldens remain untouched. Junction, arrowhead, routing,
-and tight-padding group/self-loop defects below are still open.
+existing ASCII/extended goldens remained untouched in that milestone. Arrowhead,
+routing, and tight-padding group/self-loop defects below are still open.
+
+## Unicode junction correction
+
+The second repair milestone unions directional connections before choosing a
+junction glyph, only when `useAscii=false`. Light, heavy, double, rounded, and
+dotted/dashed palette glyphs are recognized. Mixed light/double axes retain their
+weights: a dotted branch on a continuous double trunk now uses `╟`, not `└`.
+Same-axis weight conflicts take the stronger weight. Other mixed-axis combinations
+fall back to a uniform stronger-weight glyph without losing connections; this is
+not a per-arm style compositor. Identical dotted/rounded glyphs stay unchanged.
+Arrowheads, ANSI-styled cells, colors, and routing keep their overlay behavior.
+Explicit edge-label and group-title layers bypass stroke merging so box-drawing
+characters used as text remain literal. Source-border attachment weight policy
+is unchanged.
+
+Regression tests check both merge orders, directional union across every recognized
+glyph pair, mixed weights, palette aliases, ASCII isolation, literal box-drawing
+labels/titles, and the rendered mixed-branch fixture at padding 1 and 5. The audit
+matrix no longer expects the mixed-junction defect and checks the exact glyph.
+Only three junction cells in `unicode_styles_stems.txt` change: two `└` become
+`╟`, and one continuing double-trunk branch changes from `╚` to `╠`. No ASCII
+goldens are changed.
+
+Validation: `go test ./... -count=1`, `go vet ./...`, and a standard-Go WASM build
+with a Node runtime junction check pass. TinyGo remains blocked by the previously
+observed missing `wasm-opt`; no fresh TinyGo demo or Pages deployment is claimed.
 
 ## Confirmed defects
 
@@ -54,7 +81,7 @@ and tight-padding group/self-loop defects below are still open.
 | `graph LR; A<-->B`, padding 1 | Unicode ends up with only `◄`; the right head is overwritten. | Both heads share one cell in `drawArrowHead`. ASCII draws only a forward head even at padding 5. |
 | `A-->B; B-->A`, padding 1 | Only one head survives. | Both modes route opposite edges through the same one-cell gap. Padding 5 retains both heads but shares the route. |
 | `graph TD; A-->|a long edge label|B`, padding 1 | Label overwrites the arrowhead. | Both modes. Label drawings are merged after heads in `graph.draw`; label-aware minimum vertical clearance is missing. |
-| `A-->B; A-.->C; A==>D` | A dotted branch uses `└` on a double vertical trunk that continues above and below it. The glyph drops the upward connection. | Unicode only. `mergeJunctions` and `junctionChars` handle light glyphs, not mixed-weight connectivity. |
+| `A-->B; A-.->C; A==>D` | Originally a dotted branch used `└` on a double vertical trunk that continued above and below it, losing the downward arm. | Corrected in Unicode mode: connectivity merging selects `╟`. ASCII is unchanged. |
 | `A-->|one|B; A-->|two|B` | Only `two` and one head remain. | Both modes. The paths are identical; later labels/heads overwrite earlier edges. |
 | `A[Café]-->|é|B[東京]` | Labels become `CafÃ©`, `Ã©`, and byte-derived CJK mojibake; box widths are inflated. | Originally both modes; now ASCII only. Extended-mode measurement/drawing is corrected. |
 | `A[é]-->|👩‍💻|B[🙂]` | Combining-mark and emoji labels are also corrupted. | Originally both modes; now ASCII only. Added during the spike to match its display-cell measurement probes. |

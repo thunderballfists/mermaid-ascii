@@ -8,24 +8,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var junctionChars = []string{
-	"─", // Horizontal line
-	"│", // Vertical line
-	"┌", // Top-left corner
-	"┐", // Top-right corner
-	"└", // Bottom-left corner
-	"┘", // Bottom-right corner
-	"├", // T-junction pointing right
-	"┤", // T-junction pointing left
-	"┬", // T-junction pointing down
-	"┴", // T-junction pointing up
-	"┼", // Cross junction
-	"╴", // Left end of horizontal line
-	"╵", // Top end of vertical line
-	"╶", // Right end of horizontal line
-	"╷", // Bottom end of vertical line
-}
-
 type drawing [][]string
 
 type styleClass struct {
@@ -394,32 +376,15 @@ func (g *graph) setDrawingSizeToGridConstraints() {
 	g.drawing.increaseSize(maxX-1, maxY-1)
 }
 
-func mergeJunctions(c1, c2 string) string {
-	// Define all possible junction combinations
-	junctionMap := map[string]map[string]string{
-		"─": {"│": "┼", "┌": "┬", "┐": "┬", "└": "┴", "┘": "┴", "├": "┼", "┤": "┼", "┬": "┬", "┴": "┴"},
-		"│": {"─": "┼", "┌": "├", "┐": "┤", "└": "├", "┘": "┤", "├": "├", "┤": "┤", "┬": "┼", "┴": "┼"},
-		"┌": {"─": "┬", "│": "├", "┐": "┬", "└": "├", "┘": "┼", "├": "├", "┤": "┼", "┬": "┬", "┴": "┼"},
-		"┐": {"─": "┬", "│": "┤", "┌": "┬", "└": "┼", "┘": "┤", "├": "┼", "┤": "┤", "┬": "┬", "┴": "┼"},
-		"└": {"─": "┴", "│": "├", "┌": "├", "┐": "┼", "┘": "┴", "├": "├", "┤": "┼", "┬": "┼", "┴": "┴"},
-		"┘": {"─": "┴", "│": "┤", "┌": "┼", "┐": "┤", "└": "┴", "├": "┼", "┤": "┤", "┬": "┼", "┴": "┴"},
-		"├": {"─": "┼", "│": "├", "┌": "├", "┐": "┼", "└": "├", "┘": "┼", "┤": "┼", "┬": "┼", "┴": "┼"},
-		"┤": {"─": "┼", "│": "┤", "┌": "┼", "┐": "┤", "└": "┼", "┘": "┤", "├": "┼", "┬": "┼", "┴": "┼"},
-		"┬": {"─": "┬", "│": "┼", "┌": "┬", "┐": "┬", "└": "┼", "┘": "┼", "├": "┼", "┤": "┼", "┴": "┼"},
-		"┴": {"─": "┴", "│": "┼", "┌": "┼", "┐": "┼", "└": "┴", "┘": "┴", "├": "┼", "┤": "┼", "┬": "┼"},
-	}
-
-	// Check if there's a defined merge for the two characters
-	if merged, ok := junctionMap[c1][c2]; ok {
-		log.Debugf("Merging %s and %s to %s", c1, c2, merged)
-		return merged
-	}
-
-	// If no merge is defined, return c1 as a fallback
-	return c1
+func mergeDrawings(baseDrawing *drawing, mergeCoord drawingCoord, drawings ...*drawing) *drawing {
+	return composeDrawings(baseDrawing, mergeCoord, true, drawings...)
 }
 
-func mergeDrawings(baseDrawing *drawing, mergeCoord drawingCoord, drawings ...*drawing) *drawing {
+func overlayDrawings(baseDrawing *drawing, mergeCoord drawingCoord, drawings ...*drawing) *drawing {
+	return composeDrawings(baseDrawing, mergeCoord, false, drawings...)
+}
+
+func composeDrawings(baseDrawing *drawing, mergeCoord drawingCoord, mergeStrokes bool, drawings ...*drawing) *drawing {
 	// Find the maximum dimensions
 	maxX, maxY := getDrawingSize(baseDrawing)
 	for _, d := range drawings {
@@ -447,7 +412,7 @@ func mergeDrawings(baseDrawing *drawing, mergeCoord drawingCoord, drawings ...*d
 				c := (*d)[x][y]
 				if c != " " {
 					currentChar := (*mergedDrawing)[x+mergeCoord.x][y+mergeCoord.y]
-					if !useAscii && isJunctionChar(c) && isJunctionChar(currentChar) {
+					if mergeStrokes && !useAscii && isJunctionChar(c) && isJunctionChar(currentChar) {
 						(*mergedDrawing)[x+mergeCoord.x][y+mergeCoord.y] = mergeJunctions(currentChar, c)
 					} else {
 						(*mergedDrawing)[x+mergeCoord.x][y+mergeCoord.y] = c
@@ -458,15 +423,6 @@ func mergeDrawings(baseDrawing *drawing, mergeCoord drawingCoord, drawings ...*d
 	}
 
 	return mergedDrawing
-}
-
-func isJunctionChar(c string) bool {
-	for _, junctionChar := range junctionChars {
-		if c == junctionChar {
-			return true
-		}
-	}
-	return false
 }
 
 func drawingToString(d *drawing) string {

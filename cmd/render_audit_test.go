@@ -138,11 +138,11 @@ func auditRenderDefects(rendered graph, output string, panicValue any, ascii boo
 	for rowIndex, row := range rows {
 		cells := []rune(row)
 		for columnIndex, cell := range cells {
-			if cell != '└' || rowIndex == 0 || rowIndex+1 >= len(rows) || columnIndex+1 >= len(cells) || cells[columnIndex+1] != '┈' {
+			if rowIndex == 0 || rowIndex+1 >= len(rows) || columnIndex+1 >= len(cells) || cells[columnIndex+1] != '┈' {
 				continue
 			}
 			above, below := []rune(rows[rowIndex-1]), []rune(rows[rowIndex+1])
-			if columnIndex < len(above) && columnIndex < len(below) && above[columnIndex] == '║' && below[columnIndex] == '║' {
+			if columnIndex < len(above) && columnIndex < len(below) && above[columnIndex] == '║' && below[columnIndex] == '║' && cell != '╟' {
 				defects["mixed-junction"] = true
 			}
 		}
@@ -169,9 +169,6 @@ func knownAuditDefects(name string, ascii bool, padding int, heads HeadStyle) []
 	}
 	if name == "nested" && padding == 1 {
 		defects = append(defects, "group-border-overlap")
-	}
-	if name == "mixed-branches" && !ascii {
-		defects = append(defects, "mixed-junction")
 	}
 	if ascii && (name == "unicode-labels" || name == "grapheme-labels") {
 		defects = append(defects, "node-label-lost")
