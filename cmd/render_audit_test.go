@@ -172,7 +172,7 @@ func knownAuditDefects(name string, ascii bool, padding int, heads HeadStyle) []
 	if ascii && (name == "parallel" || name == "unicode-labels" || name == "grapheme-labels") {
 		defects = append(defects, "edge-label-lost")
 	}
-	if name == "nested" && padding == 1 {
+	if name == "nested" && ascii && padding == 1 {
 		defects = append(defects, "group-border-overlap")
 	}
 	if ascii && (name == "unicode-labels" || name == "grapheme-labels") {

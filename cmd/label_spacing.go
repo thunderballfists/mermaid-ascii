@@ -5,11 +5,24 @@ func (g *graph) placeRepeatedRouteLabels() {
 	for _, connection := range g.edges {
 		hasRepeated = hasRepeated || connection.separateRoute
 	}
-	if !hasRepeated {
+	if !hasRepeated && len(g.subgraphs) == 0 {
 		return
 	}
 	for attempt := 0; attempt <= len(g.edges)*4; attempt++ {
 		occupied := map[drawingCoord]bool{}
+		if len(g.subgraphs) > 0 {
+			g.calculateSubgraphBoundingBoxes()
+			for _, group := range g.subgraphs {
+				if len(group.nodes) == 0 {
+					continue
+				}
+				width := textWidth(group.name)
+				left := group.minX + Max(1, (group.maxX-group.minX)/2-width/2)
+				for column := 0; column < width; column++ {
+					occupied[drawingCoord{left + column, group.minY + 1}] = true
+				}
+			}
+		}
 		for _, contentNode := range g.nodes {
 			width, height := getDrawingSize(contentNode.drawing)
 			for column := 0; column <= width; column++ {

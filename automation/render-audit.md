@@ -4,8 +4,8 @@ Date: 2026-10-02. Baseline: `59b6368` (M9).
 
 The original characterization audit left production code and all goldens
 unchanged. The bounded corrections below describe subsequent repairs. Passing
-audit tests still reproduce the remaining defects; they do not mean all affected
-output is correct. ASCII outputs and goldens remain unchanged.
+audit tests retain ASCII compatibility defects; they are not a claim that every
+possible graph is correct. ASCII outputs and goldens remain unchanged.
 
 ## Reproduce
 
@@ -137,6 +137,27 @@ collapsing multiple edges to two. Their rectangular trailing blank cells are
 intentional. The existing finite cardinal-port model is retained; this is not
 an unrestricted multi-port routing engine.
 
+Repair 7 reserves group margins in content/gap bands before drawing coordinates
+are finalized. Adjacent aligned nodes entering/leaving nested groups account for
+every enclosing frame and its title overhead. Long titles expand a member's
+content band before placement, rather than extending the frame over an external
+node. Group-title footprints join label collision checks, so newly enlarged
+vertical gaps cannot place an edge label beneath a title. The legacy frame-spacing
+fallback remains for layouts that these bounded reservations do not separate.
+Grouped incident edges whose visible heads share one physical port use the same
+alternate-route search, avoiding collisions exposed by the corrected gaps. The
+Unicode canvas includes group offsets and is resized after translation, retaining
+outer routes instead of relying on node/frame drawing to grow it implicitly.
+
+Tests cover LR/TD, padding 1/2/5, nested/sibling/disconnected groups, nested-only
+parents, long CJK titles, labelled nested-group transitions, shared headed ports,
+outer routes after group offsets, child/member
+containment, external-node exclusion, and node-interior preservation. The 104
+Unicode configurations in the original audit matrix now have no expected defects.
+All existing ASCII goldens remain unchanged; repair 7 changes no goldens.
+Interleaved groups whose members already surround unrelated nodes remain a
+limitation of the original node-placement algorithm, not a solved clustering case.
+
 | Case | Observation | Scope / cause |
 | --- | --- | --- |
 | `graph LR; A<-->B`, padding 1 | Originally Unicode retained only `◄` because both heads shared one cell. | Corrected in Unicode mode by minimum clearance. ASCII still draws only a forward head, including at padding 5. |
@@ -146,13 +167,38 @@ an unrestricted multi-port routing engine.
 | `A-->|one|B; A-->|two|B` | Originally only `two` and one head remained. | Now ASCII only. Unicode repeated edges have separate routes and collision-aware labels. |
 | `A[Café]-->|é|B[東京]` | Labels become `CafÃ©`, `Ã©`, and byte-derived CJK mojibake; box widths are inflated. | Originally both modes; now ASCII only. Extended-mode measurement/drawing is corrected. |
 | `A[é]-->|👩‍💻|B[🙂]` | Combining-mark and emoji labels are also corrupted. | Originally both modes; now ASCII only. Added during the spike to match its display-cell measurement probes. |
-| Nested Outer/Inner groups, padding 1 | Group frames touch/cross node boxes; the external D node straddles Outer's frame. | Both modes. Node placement precedes group extents; group border clearance is not reserved. Padding 5 avoids this specific overlap. |
+| Nested Outer/Inner groups, padding 1 | Originally frames touched/crossed node boxes and external D straddled Outer's frame. | Now ASCII only in this fixture. Unicode reserves nested-frame clearance before coordinates are finalized. |
 | `graph LR; A-->A`, padding 1 | Originally an index-out-of-range panic. | Now ASCII only. Unicode outer path bands have drawable clearance; padding-2/3 ports also stay on the border rather than entering the node. |
 | `graph LR; A---B` | ASCII emits an arrowhead for an undirected edge. | ASCII's `drawArrowHead` does not consult `arrowDir`; Unicode respects it. |
 
 Semicolons in the table separate lines for readability; the executable sources
 use actual newlines. Head suppression applies only to Unicode; ASCII ignores the
 head-style option, preserving the current compatibility behavior.
+
+## Final validation (2026-10-03)
+
+`go test ./... -count=1`, `go vet ./...`, standard-Go WASM builds, and TinyGo 0.39.0
+builds pass. The earlier missing `wasm-opt` blocker was resolved for validation
+using a checksum-verified official Binaryen 133 archive under `/tmp`, without
+changing repository dependencies or installing system packages:
+
+```sh
+WASMOPT=/tmp/mermaid-binaryen/binaryen-version_133/bin/wasm-opt make wasm
+WASMOPT=/tmp/mermaid-binaryen/binaryen-version_133/bin/wasm-opt make serve
+```
+
+TinyGo runtime checks preserve all three parallel labels/heads, nested-group
+labels, and exact ASCII output. The site's actual worker also passes 25 HTTP/WASM
+checks against the local server across LR/TD and padding 1/2/5. Independent review
+compared 300 repeated/cyclic and 240 grouped diagrams against their preceding
+milestones, finding no newly lost labels/titles, reduced head counts, or panics.
+Those samples do not establish correctness for arbitrary graphs.
+Interactive browser inspection was blocked:
+no browser connector was available and native Brave access was not approved.
+The remote Pages workflow returned no runs, and the Pages API returned 404;
+no deployment or push is claimed. Local passing builds do not establish Pages
+deployment. More general clustering, unlimited ports, and TCSS integration remain
+outside this renderer-repair series.
 
 ## Baseline example: lost vertical head
 

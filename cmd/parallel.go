@@ -29,7 +29,7 @@ func (g *graph) reserveRepeatedPortMargins() {
 		if contentNode.gridCoord.y == 0 {
 			capacity--
 		}
-		if repeated[contentNode] && heads[contentNode] > capacity {
+		if (repeated[contentNode] || len(g.subgraphs) > 0) && heads[contentNode] > capacity {
 			if contentNode.gridCoord.x == 0 {
 				shiftX = 4
 				capacity++
@@ -64,13 +64,21 @@ func (g *graph) routeRepeatedEdge(connection *edge) bool {
 		}
 		samePair := other.from == connection.from && other.to == connection.to
 		reversedPair := other.from == connection.to && other.to == connection.from
-		if samePair || reversedPair && (connection.text != "" || other.text != "" || connection.arrowDir != other.arrowDir) {
+		conflictingHead := len(connection.path) > 0 && headStyle != HeadStyleNone && sharesHeadPort(connection, other)
+		if samePair || reversedPair && (connection.text != "" || other.text != "" || connection.arrowDir != other.arrowDir) || conflictingHead {
 			previous = append(previous, other)
 		}
 	}
 	if len(previous) == 0 {
 		return false
 	}
+	originalPath := connection.path
+	connection.path = nil
+	defer func() {
+		if len(connection.path) == 0 {
+			connection.path = originalPath
+		}
+	}()
 	ports := []direction{Down, Right, Up, Left}
 	if graphDirection == "TD" {
 		ports = []direction{Right, Down, Left, Up}
@@ -127,6 +135,15 @@ func (g *graph) routeRepeatedEdge(connection *edge) bool {
 		}
 	}
 	return false
+}
+
+func sharesHeadPort(connection, other *edge) bool {
+	startHead := connection.arrowDir == arrowDirBackward || connection.arrowDir == arrowDirBoth
+	endHead := connection.arrowDir == arrowDirForward || connection.arrowDir == arrowDirBoth
+	otherStartHead := other.arrowDir == arrowDirBackward || other.arrowDir == arrowDirBoth
+	otherEndHead := other.arrowDir == arrowDirForward || other.arrowDir == arrowDirBoth
+	return startHead && (otherStartHead && connection.from == other.from && connection.startDir == other.startDir || otherEndHead && connection.from == other.to && connection.startDir == other.endDir) ||
+		endHead && (otherStartHead && connection.to == other.from && connection.endDir == other.startDir || otherEndHead && connection.to == other.to && connection.endDir == other.endDir)
 }
 
 func safeRepeatedPort(contentNode *node, port direction) bool {

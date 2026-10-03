@@ -296,6 +296,9 @@ func (g *graph) createMapping() {
 	for _, n := range g.nodes {
 		g.setColumnWidth(n)
 	}
+	if !useAscii {
+		g.reserveGroupClearance()
+	}
 
 	routingEdges := g.edges
 	if !useAscii {
@@ -568,6 +571,9 @@ func (g *graph) offsetDrawingForSubgraphs() {
 			n.drawingCoord.x += offsetX
 			n.drawingCoord.y += offsetY
 		}
+	}
+	if !useAscii {
+		g.setDrawingSizeToGridConstraints()
 	}
 }
 

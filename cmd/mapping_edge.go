@@ -28,6 +28,11 @@ func (g *graph) determinePath(e *edge) {
 	if !useAscii && g.routeRepeatedEdge(e) {
 		return
 	}
+	defer func() {
+		if !useAscii && len(g.subgraphs) > 0 {
+			g.routeRepeatedEdge(e)
+		}
+	}()
 	// Get both paths and use least amount of steps
 	var preferredPath, alternativePath []gridCoord
 	var from, to gridCoord

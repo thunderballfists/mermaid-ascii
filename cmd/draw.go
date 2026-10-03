@@ -372,6 +372,10 @@ func (g *graph) setDrawingSizeToGridConstraints() {
 	for _, h := range g.rowHeight {
 		maxY += h
 	}
+	if !useAscii {
+		maxX += g.offsetX
+		maxY += g.offsetY
+	}
 	// Increase size of drawing to fit all nodes
 	g.drawing.increaseSize(maxX-1, maxY-1)
 }
