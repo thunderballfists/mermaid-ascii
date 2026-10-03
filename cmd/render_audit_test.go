@@ -161,7 +161,7 @@ func auditRenderDefects(rendered graph, output string, panicValue any, ascii boo
 }
 
 func knownAuditDefects(name string, ascii bool, padding int, heads HeadStyle) []string {
-	if name == "self-loop" && padding == 1 {
+	if name == "self-loop" && ascii && padding == 1 {
 		return []string{"render-panic"}
 	}
 	defects := []string{}

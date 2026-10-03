@@ -103,6 +103,14 @@ build and Pages deployment are not claimed as verified.
 
 ## Confirmed defects
 
+Repair 4 reserves at least two cells for newly allocated Unicode outer path
+bands. This fixes the padding-1 self-loop panic and padding-2/3 attachments that
+were drawn inside the node. Routing and existing larger/default padding stay
+unchanged. LR/TD tests cover padding 1/2/3/5, solid/thick/dotted/bidirectional/
+undirected edges and all head styles, including node-interior preservation.
+Existing ASCII and Unicode goldens are unchanged; the legacy ASCII padding-1
+panic remains an explicit compatibility expectation.
+
 | Case | Observation | Scope / cause |
 | --- | --- | --- |
 | `graph LR; A<-->B`, padding 1 | Originally Unicode retained only `◄` because both heads shared one cell. | Corrected in Unicode mode by minimum clearance. ASCII still draws only a forward head, including at padding 5. |
@@ -113,7 +121,7 @@ build and Pages deployment are not claimed as verified.
 | `A[Café]-->|é|B[東京]` | Labels become `CafÃ©`, `Ã©`, and byte-derived CJK mojibake; box widths are inflated. | Originally both modes; now ASCII only. Extended-mode measurement/drawing is corrected. |
 | `A[é]-->|👩‍💻|B[🙂]` | Combining-mark and emoji labels are also corrupted. | Originally both modes; now ASCII only. Added during the spike to match its display-cell measurement probes. |
 | Nested Outer/Inner groups, padding 1 | Group frames touch/cross node boxes; the external D node straddles Outer's frame. | Both modes. Node placement precedes group extents; group border clearance is not reserved. Padding 5 avoids this specific overlap. |
-| `graph LR; A-->A`, padding 1 | Index-out-of-range panic. | Both modes. Path/canvas allocation fails at tight spacing; `increaseGridSizeForPath` allocates half-padding (zero at 1), while `drawLine` assumes drawable coordinates. Padding 5 succeeds. |
+| `graph LR; A-->A`, padding 1 | Originally an index-out-of-range panic. | Now ASCII only. Unicode outer path bands have drawable clearance; padding-2/3 ports also stay on the border rather than entering the node. |
 | `graph LR; A---B` | ASCII emits an arrowhead for an undirected edge. | ASCII's `drawArrowHead` does not consult `arrowDir`; Unicode respects it. |
 
 Semicolons in the table separate lines for readability; the executable sources

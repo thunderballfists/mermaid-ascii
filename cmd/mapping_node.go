@@ -78,12 +78,16 @@ func (g *graph) setColumnWidth(n *node) {
 }
 
 func (g *graph) increaseGridSizeForPath(path []gridCoord) {
+	pathWidth, pathHeight := g.paddingX/2, g.paddingY/2
+	if !useAscii {
+		pathWidth, pathHeight = Max(2, pathWidth), Max(2, pathHeight)
+	}
 	for _, c := range path {
 		if _, exists := g.columnWidth[c.x]; !exists {
-			g.columnWidth[c.x] = g.paddingX / 2
+			g.columnWidth[c.x] = pathWidth
 		}
 		if _, exists := g.rowHeight[c.y]; !exists {
-			g.rowHeight[c.y] = g.paddingY / 2
+			g.rowHeight[c.y] = pathHeight
 		}
 	}
 }
