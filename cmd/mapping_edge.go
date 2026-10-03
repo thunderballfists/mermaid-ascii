@@ -144,8 +144,17 @@ func (g *graph) determineLabelLine(e *edge) {
 }
 
 func (g *graph) reserveArrowHeadClearance(connection *edge) {
-	if !useAscii && headStyle != HeadStyleNone && connection.arrowDir == arrowDirBoth && len(connection.path) == 2 {
+	if useAscii || headStyle == HeadStyleNone || connection.arrowDir == arrowDirOpen || len(connection.path) != 2 {
+		return
+	}
+	if connection.arrowDir == arrowDirBoth {
 		g.reserveLineClearance(connection.path, 2)
+	}
+	for _, other := range g.edges {
+		hasOpposedHeads := other.arrowDir == connection.arrowDir || other.arrowDir == arrowDirBoth || connection.arrowDir == arrowDirBoth
+		if other != connection && hasOpposedHeads && other.arrowDir != arrowDirOpen && len(other.path) == 2 && connection.path[0] == other.path[1] && connection.path[1] == other.path[0] {
+			g.reserveLineClearance(connection.path, 2)
+		}
 	}
 }
 

@@ -111,10 +111,15 @@ undirected edges and all head styles, including node-interior preservation.
 Existing ASCII and Unicode goldens are unchanged; the legacy ASCII padding-1
 panic remains an explicit compatibility expectation.
 
+Repair 5 extends the same two-head clearance to opposite directed edges sharing
+a straight route. Both heads survive at padding 1 in LR/TD with every visible
+head style; suppressed heads and larger/default padding retain their spacing.
+No routing or golden outputs change. ASCII's one-cell head collision is retained.
+
 | Case | Observation | Scope / cause |
 | --- | --- | --- |
 | `graph LR; A<-->B`, padding 1 | Originally Unicode retained only `◄` because both heads shared one cell. | Corrected in Unicode mode by minimum clearance. ASCII still draws only a forward head, including at padding 5. |
-| `A-->B; B-->A`, padding 1 | Only one head survives. | Both modes route opposite edges through the same one-cell gap. Padding 5 retains both heads but shares the route. |
+| `A-->B; B-->A`, padding 1 | Originally only one head survived. | Now ASCII only. Unicode reserves two drawable cells for opposed heads; unlabelled opposite edges may still share the straight route. |
 | `graph TD; A-->|a long edge label|B`, padding 1 | Originally the label overwrote the arrowhead. | Now ASCII only. Unicode reserves vertical label/head clearance before drawing. |
 | `A-->B; A-.->C; A==>D` | Originally a dotted branch used `└` on a double vertical trunk that continued above and below it, losing the downward arm. | Corrected in Unicode mode: connectivity merging selects `╟`. ASCII is unchanged. |
 | `A-->|one|B; A-->|two|B` | Only `two` and one head remain. | Both modes. The paths are identical; later labels/heads overwrite earlier edges. |
