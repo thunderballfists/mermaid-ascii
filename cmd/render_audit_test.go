@@ -166,10 +166,10 @@ func knownAuditDefects(name string, ascii bool, padding int, heads HeadStyle) []
 	}
 	defects := []string{}
 	hasHeads := ascii || heads != HeadStyleNone
-	if name == "undirected" && ascii || name == "bidirectional" && ascii || (name == "cycle" && ascii && padding == 1 || name == "parallel" || name == "long-label" && ascii && padding == 1) && hasHeads {
+	if name == "undirected" && ascii || name == "bidirectional" && ascii || (name == "cycle" && ascii && padding == 1 || name == "parallel" && ascii || name == "long-label" && ascii && padding == 1) && hasHeads {
 		defects = append(defects, "arrowhead-count")
 	}
-	if name == "parallel" || ascii && (name == "unicode-labels" || name == "grapheme-labels") {
+	if ascii && (name == "parallel" || name == "unicode-labels" || name == "grapheme-labels") {
 		defects = append(defects, "edge-label-lost")
 	}
 	if name == "nested" && padding == 1 {

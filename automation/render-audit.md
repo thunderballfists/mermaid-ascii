@@ -116,13 +116,34 @@ a straight route. Both heads survive at padding 1 in LR/TD with every visible
 head style; suppressed heads and larger/default padding retain their spacing.
 No routing or golden outputs change. ASCII's one-cell head collision is retained.
 
+Repair 6 separates repeated connections with the existing A* search and cardinal
+ports. Unique node pairs are routed first so additional edges can avoid occupied
+head/label ports, and prior routes receive a traversal penalty rather than being
+blocked. Repeated searches remain in the nonnegative grid. Actual drawable spans
+select label segments; content/gap bands, not structural border bands, expand.
+After mapping, labels reserve node/head/cap and prior-label footprints, trying
+other positions on their own route or adding clearance before final coordinates.
+Stored label positions follow subgraph offsets. ASCII uses the original pipeline.
+Label origins are calculated before rendering, so rejected negative positions
+cannot panic. Bent alternate routes reserve drawable endpoint cells even in
+existing gap bands. Repeated pairs with saturated corner nodes receive left/top
+grid margins before routing, making the otherwise unavailable cardinal ports usable.
+
+Tests cover two/three labelled parallel edges, labelled opposed edges, LR/TD,
+all head styles, branching and grouped diagrams, and node-interior preservation.
+Only two affected Unicode goldens change: `unicode_heads_basic.txt` and
+`edge_styles_unicode_basic.txt` now retain the four requested heads instead of
+collapsing multiple edges to two. Their rectangular trailing blank cells are
+intentional. The existing finite cardinal-port model is retained; this is not
+an unrestricted multi-port routing engine.
+
 | Case | Observation | Scope / cause |
 | --- | --- | --- |
 | `graph LR; A<-->B`, padding 1 | Originally Unicode retained only `◄` because both heads shared one cell. | Corrected in Unicode mode by minimum clearance. ASCII still draws only a forward head, including at padding 5. |
 | `A-->B; B-->A`, padding 1 | Originally only one head survived. | Now ASCII only. Unicode reserves two drawable cells for opposed heads; unlabelled opposite edges may still share the straight route. |
 | `graph TD; A-->|a long edge label|B`, padding 1 | Originally the label overwrote the arrowhead. | Now ASCII only. Unicode reserves vertical label/head clearance before drawing. |
 | `A-->B; A-.->C; A==>D` | Originally a dotted branch used `└` on a double vertical trunk that continued above and below it, losing the downward arm. | Corrected in Unicode mode: connectivity merging selects `╟`. ASCII is unchanged. |
-| `A-->|one|B; A-->|two|B` | Only `two` and one head remain. | Both modes. The paths are identical; later labels/heads overwrite earlier edges. |
+| `A-->|one|B; A-->|two|B` | Originally only `two` and one head remained. | Now ASCII only. Unicode repeated edges have separate routes and collision-aware labels. |
 | `A[Café]-->|é|B[東京]` | Labels become `CafÃ©`, `Ã©`, and byte-derived CJK mojibake; box widths are inflated. | Originally both modes; now ASCII only. Extended-mode measurement/drawing is corrected. |
 | `A[é]-->|👩‍💻|B[🙂]` | Combining-mark and emoji labels are also corrupted. | Originally both modes; now ASCII only. Added during the spike to match its display-cell measurement probes. |
 | Nested Outer/Inner groups, padding 1 | Group frames touch/cross node boxes; the external D node straddles Outer's frame. | Both modes. Node placement precedes group extents; group border clearance is not reserved. Padding 5 avoids this specific overlap. |

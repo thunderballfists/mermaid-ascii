@@ -84,6 +84,10 @@ func heuristic(a, b gridCoord) int {
 }
 
 func (g *graph) getPath(from gridCoord, to gridCoord) ([]gridCoord, error) {
+	return g.getPathWithCosts(from, to, nil)
+}
+
+func (g *graph) getPathWithCosts(from gridCoord, to gridCoord, routeCosts map[gridCoord]int) ([]gridCoord, error) {
 	pq := &priorityQueue{}
 	heap.Init(pq)
 	heap.Push(pq, &priorityQueueItem{coord: from, priority: 0})
@@ -107,11 +111,14 @@ func (g *graph) getPath(from gridCoord, to gridCoord) ([]gridCoord, error) {
 
 		for _, dir := range directions {
 			next := gridCoord{x: current.x + dir.x, y: current.y + dir.y}
+			if routeCosts != nil && (next.x < 0 || next.y < 0) {
+				continue
+			}
 			if !g.isFreeInGrid(next) && !next.Equals(to) {
 				continue
 			}
 
-			newCost := costSoFar[current] + 1
+			newCost := costSoFar[current] + 1 + routeCosts[next]
 			if cost, ok := costSoFar[next]; !ok || newCost < cost {
 				costSoFar[next] = newCost
 				priority := newCost + heuristic(next, to)
@@ -549,6 +556,10 @@ func (g *graph) drawArrowLabel(e *edge) *drawing {
 	if lenLabel == 0 {
 		return d
 	}
+	if e.labelPosition != nil {
+		d.drawText(*e.labelPosition, e.text)
+		return d
+	}
 
 	log.Debugf("Drawing text '%s' on gridline %v", e.text, e.labelLine)
 	d.drawTextOnLine(g.lineToDrawing(e.labelLine), e.text, e.nearHead)
@@ -556,6 +567,13 @@ func (g *graph) drawArrowLabel(e *edge) *drawing {
 }
 
 func (d *drawing) drawTextOnLine(line []drawingCoord, label string, nearHead bool) {
+	position, available := labelPositionOnLine(line, label, nearHead)
+	if available {
+		d.drawText(position, label)
+	}
+}
+
+func labelPositionOnLine(line []drawingCoord, label string, nearHead bool) (drawingCoord, bool) {
 	// Write text in middle of the line
 	//  123456789
 	// |---------|
@@ -563,7 +581,7 @@ func (d *drawing) drawTextOnLine(line []drawingCoord, label string, nearHead boo
 	log.Debugf("Drawing text '%s' on drawingline %v", label, line)
 	labelWidth := textWidth(label)
 	if len(line) == 0 {
-		return
+		return drawingCoord{}, false
 	}
 	var minX, maxX, minY, maxY int
 	if line[0].x > line[1].x {
@@ -586,7 +604,7 @@ func (d *drawing) drawTextOnLine(line []drawingCoord, label string, nearHead boo
 		span := maxX - minX
 		if span < labelWidth+2 {
 			// Not enough room to place the label with padding on both sides
-			return
+			return drawingCoord{}, false
 		}
 
 		available := span - labelWidth
@@ -633,7 +651,7 @@ func (d *drawing) drawTextOnLine(line []drawingCoord, label string, nearHead boo
 		}
 
 		if leftLen <= 0 || rightLen <= 0 {
-			return
+			return drawingCoord{}, false
 		}
 
 		startX := minX + leftLen + 1
@@ -644,10 +662,9 @@ func (d *drawing) drawTextOnLine(line []drawingCoord, label string, nearHead boo
 			startX = maxX - labelWidth - 1
 		}
 		startLabelCoord := drawingCoord{x: startX, y: middleY}
-		d.drawText(startLabelCoord, label)
-		return
+		return startLabelCoord, true
 	}
 
 	startLabelCoord := drawingCoord{x: middleX - labelWidth/2, y: middleY}
-	d.drawText(startLabelCoord, label)
+	return startLabelCoord, true
 }

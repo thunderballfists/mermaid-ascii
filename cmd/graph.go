@@ -290,13 +290,24 @@ func (g *graph) createMapping() {
 		}
 	}
 
+	if !useAscii {
+		g.reserveRepeatedPortMargins()
+	}
 	for _, n := range g.nodes {
 		g.setColumnWidth(n)
 	}
 
-	for _, e := range g.edges {
+	routingEdges := g.edges
+	if !useAscii {
+		routingEdges = g.uniqueEdgesFirst()
+	}
+	for _, e := range routingEdges {
 		g.determinePath(e)
 		g.increaseGridSizeForPath(e.path)
+		if e.separateRoute && len(e.path) > 2 {
+			g.reserveLineClearance(e.path[:2], 1)
+			g.reserveLineClearance(e.path[len(e.path)-2:], 1)
+		}
 		g.reserveArrowHeadClearance(e)
 		g.determineLabelLine(e)
 	}
@@ -310,6 +321,9 @@ func (g *graph) createMapping() {
 		g.nodes[n.index].setDrawing(*g)
 	}
 	g.setDrawingSizeToGridConstraints()
+	if !useAscii {
+		g.placeRepeatedRouteLabels()
+	}
 
 	// Calculate subgraph bounding boxes after nodes are positioned
 	g.calculateSubgraphBoundingBoxes()
@@ -543,6 +557,12 @@ func (g *graph) offsetDrawingForSubgraphs() {
 	}
 
 	// Offset all node coordinates (they were set before offset was calculated)
+	for _, connection := range g.edges {
+		if connection.labelPosition != nil {
+			connection.labelPosition.x += offsetX
+			connection.labelPosition.y += offsetY
+		}
+	}
 	for _, n := range g.nodes {
 		if n.drawingCoord != nil {
 			n.drawingCoord.x += offsetX

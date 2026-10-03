@@ -7,22 +7,27 @@ import (
 )
 
 type edge struct {
-	from      *node
-	to        *node
-	text      string
-	nearHead  bool
-	path      []gridCoord
-	labelLine []gridCoord
-	startDir  direction
-	endDir    direction
-	edgeStyle EdgeStyle
-	arrowDir  arrowDirection
-	leftCap   arrowEndCap
-	rightCap  arrowEndCap
-	lenHint   int
+	from          *node
+	to            *node
+	text          string
+	nearHead      bool
+	path          []gridCoord
+	labelLine     []gridCoord
+	startDir      direction
+	endDir        direction
+	edgeStyle     EdgeStyle
+	arrowDir      arrowDirection
+	leftCap       arrowEndCap
+	rightCap      arrowEndCap
+	lenHint       int
+	separateRoute bool
+	labelPosition *drawingCoord
 }
 
 func (g *graph) determinePath(e *edge) {
+	if !useAscii && g.routeRepeatedEdge(e) {
+		return
+	}
 	// Get both paths and use least amount of steps
 	var preferredPath, alternativePath []gridCoord
 	var from, to gridCoord
@@ -105,7 +110,11 @@ func (g *graph) determineLabelLine(e *edge) {
 	for _, step := range e.path[1:] {
 		line := []gridCoord{gridCoord(prevStep), gridCoord(step)}
 		lineWidth := g.calculateLineWidth(line)
-		if lineWidth >= lenLabel {
+		if e.separateRoute {
+			endpoints := g.lineToDrawing(line)
+			lineWidth = Abs(endpoints[0].x-endpoints[1].x) + Abs(endpoints[0].y-endpoints[1].y) - 1
+		}
+		if !e.separateRoute && lineWidth >= lenLabel {
 			largestLine = line
 			break
 		} else if lineWidth > largestLineSize {
@@ -124,6 +133,13 @@ func (g *graph) determineLabelLine(e *edge) {
 		minX = largestLine[0].x
 	}
 	middleX := minX + (maxX-minX)/2
+	if e.separateRoute && middleX%2 == 0 {
+		if middleX > minX {
+			middleX--
+		} else {
+			middleX++
+		}
+	}
 	extraSpacing := 2
 	switch {
 	case lenLabel <= 2:
@@ -138,6 +154,9 @@ func (g *graph) determineLabelLine(e *edge) {
 	g.columnWidth[middleX] = Max(g.columnWidth[middleX], desiredWidth) // Wrap with dashes + arrowhead
 	log.Debugf("New column sizes: %v", g.columnWidth)
 	e.labelLine = largestLine
+	if e.separateRoute && largestLine[0].y == largestLine[1].y {
+		g.reserveLineClearance(largestLine, lenLabel+2)
+	}
 	if !useAscii && largestLine[0].x == largestLine[1].x && headStyle != HeadStyleNone && e.arrowDir != arrowDirOpen {
 		g.reserveLineClearance(largestLine, 3)
 	}
@@ -177,6 +196,12 @@ func (g *graph) reserveLineClearance(line []gridCoord, minimumCells int) {
 		return
 	}
 	middleBand := Min(startIndex, endIndex) + Abs(startIndex-endIndex)/2
+	if middleBand%2 == 0 {
+		middleBand++
+		if middleBand > Max(startIndex, endIndex) {
+			middleBand -= 2
+		}
+	}
 	extraCells := minimumCells - availableCells
 	if middleBand == startIndex || middleBand == endIndex {
 		extraCells *= 2
