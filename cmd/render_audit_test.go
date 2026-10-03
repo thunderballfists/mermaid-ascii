@@ -81,7 +81,10 @@ func TestRenderAuditTextUIEmbeddingDemo(t *testing.T) {
 	for _, ascii := range []bool{true, false} {
 		t.Run(fmt.Sprintf("ascii=%v", ascii), func(t *testing.T) {
 			rendered, output, panicValue := captureAuditRender(t, source, ascii, 5, HeadStylePointer)
-			expected := []string{"edge-label-lost", "node-label-lost"}
+			expected := []string{}
+			if ascii {
+				expected = []string{"edge-label-lost", "node-label-lost"}
+			}
 			actual := auditRenderDefects(rendered, output, panicValue, ascii, HeadStylePointer)
 			if !reflect.DeepEqual(actual, expected) {
 				t.Fatalf("embedding demo characterization changed: defects=%v expected=%v panic=%v\n%s", actual, expected, panicValue, output)
@@ -161,7 +164,7 @@ func knownAuditDefects(name string, ascii bool, padding int, heads HeadStyle) []
 	if name == "undirected" && ascii || name == "bidirectional" && (ascii || padding == 1 && hasHeads) || (name == "cycle" && padding == 1 || name == "parallel" || name == "long-label" && padding == 1) && hasHeads {
 		defects = append(defects, "arrowhead-count")
 	}
-	if name == "parallel" || name == "unicode-labels" || name == "grapheme-labels" {
+	if name == "parallel" || ascii && (name == "unicode-labels" || name == "grapheme-labels") {
 		defects = append(defects, "edge-label-lost")
 	}
 	if name == "nested" && padding == 1 {
@@ -170,7 +173,7 @@ func knownAuditDefects(name string, ascii bool, padding int, heads HeadStyle) []
 	if name == "mixed-branches" && !ascii {
 		defects = append(defects, "mixed-junction")
 	}
-	if name == "unicode-labels" || name == "grapheme-labels" {
+	if ascii && (name == "unicode-labels" || name == "grapheme-labels") {
 		defects = append(defects, "node-label-lost")
 	}
 	return defects

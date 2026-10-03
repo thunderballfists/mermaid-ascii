@@ -6,6 +6,7 @@ require (
 	github.com/elliotchance/orderedmap/v2 v2.2.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/gookit/color v1.5.4
+	github.com/rivo/uniseg v0.4.7
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.6.1
 )

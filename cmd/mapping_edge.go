@@ -93,7 +93,7 @@ func (e *edge) flowOptions() FlowOptions {
 
 func (g *graph) determineLabelLine(e *edge) {
 	// What line on the path should the label be placed?
-	lenLabel := len(e.text)
+	lenLabel := textWidth(e.text)
 	if lenLabel == 0 {
 		return
 	}

@@ -499,6 +499,9 @@ func (g *graph) calculateSubgraphBoundingBox(sg *subgraph) {
 	sg.minY = minY - subgraphPadding - subgraphLabelSpace
 	sg.maxX = maxX + subgraphPadding
 	sg.maxY = maxY + subgraphPadding
+	if !useAscii {
+		sg.maxX = Max(sg.maxX, sg.minX+textWidth(sg.name)+2)
+	}
 
 	log.Debugf("Subgraph %s bounding box: (%d,%d) to (%d,%d)", sg.name, sg.minX, sg.minY, sg.maxX, sg.maxY)
 }

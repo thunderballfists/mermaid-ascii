@@ -27,8 +27,25 @@ do not regenerate the existing goldens to erase a discrepancy.
 
 `TestRenderAuditTextUIEmbeddingDemo` additionally characterizes the three-node
 Unicode demo from the [native embedding spike](textui-embedding-spike.md) in both
-modes at padding 5: two checks outside the 208-configuration matrix. Its legacy
-label corruption remains reproducible; no goldens are added or changed.
+modes at padding 5: two checks outside the 208-configuration matrix. Its ASCII
+label corruption remains reproducible; extended mode now retains the labels.
+No goldens are added or changed.
+
+## Unicode measurement correction
+
+The first repair milestone fixes label measurement and drawing only when
+`useAscii=false`. Node and edge labels use `github.com/rivo/uniseg` v0.4.7 for
+grapheme segmentation and terminal-cell width. Wide graphemes reserve continuation
+cells without emitting extra spaces; combining marks and joined emoji stay intact.
+Colored nodes wrap whole graphemes rather than individual UTF-8 bytes. Group
+titles use cell-based centering, whole-grapheme clipping, and title-aware width.
+
+Regression tests cover accents, combining marks, CJK, emoji/flags, zero-width
+text, labels merged over routes, colored labels, and long group titles. Audit
+expectations remove only the extended-mode label-loss defects. ASCII remains
+byte-for-byte compatible, including its existing Unicode-label defects, and all
+existing ASCII/extended goldens remain untouched. Junction, arrowhead, routing,
+and tight-padding group/self-loop defects below are still open.
 
 ## Confirmed defects
 
@@ -39,8 +56,8 @@ label corruption remains reproducible; no goldens are added or changed.
 | `graph TD; A-->|a long edge label|B`, padding 1 | Label overwrites the arrowhead. | Both modes. Label drawings are merged after heads in `graph.draw`; label-aware minimum vertical clearance is missing. |
 | `A-->B; A-.->C; A==>D` | A dotted branch uses `└` on a double vertical trunk that continues above and below it. The glyph drops the upward connection. | Unicode only. `mergeJunctions` and `junctionChars` handle light glyphs, not mixed-weight connectivity. |
 | `A-->|one|B; A-->|two|B` | Only `two` and one head remain. | Both modes. The paths are identical; later labels/heads overwrite earlier edges. |
-| `A[Café]-->|é|B[東京]` | Labels become `CafÃ©`, `Ã©`, and byte-derived CJK mojibake; box widths are inflated. | Both modes. `setColumnWidth`, `drawBox`, and `drawText` use byte lengths/indexing rather than graphemes and display cells. |
-| `A[é]-->|👩‍💻|B[🙂]` | Combining-mark and emoji labels are also corrupted. | Both modes. Added during the spike to match its display-cell measurement probes. |
+| `A[Café]-->|é|B[東京]` | Labels become `CafÃ©`, `Ã©`, and byte-derived CJK mojibake; box widths are inflated. | Originally both modes; now ASCII only. Extended-mode measurement/drawing is corrected. |
+| `A[é]-->|👩‍💻|B[🙂]` | Combining-mark and emoji labels are also corrupted. | Originally both modes; now ASCII only. Added during the spike to match its display-cell measurement probes. |
 | Nested Outer/Inner groups, padding 1 | Group frames touch/cross node boxes; the external D node straddles Outer's frame. | Both modes. Node placement precedes group extents; group border clearance is not reserved. Padding 5 avoids this specific overlap. |
 | `graph LR; A-->A`, padding 1 | Index-out-of-range panic. | Both modes. Path/canvas allocation fails at tight spacing; `increaseGridSizeForPath` allocates half-padding (zero at 1), while `drawLine` assumes drawable coordinates. Padding 5 succeeds. |
 | `graph LR; A---B` | ASCII emits an arrowhead for an undirected edge. | ASCII's `drawArrowHead` does not consult `arrowDir`; Unicode respects it. |

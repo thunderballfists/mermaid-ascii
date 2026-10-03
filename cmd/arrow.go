@@ -545,7 +545,7 @@ func (g *graph) drawCorners(e *edge) *drawing {
 
 func (g *graph) drawArrowLabel(e *edge) *drawing {
 	d := copyCanvas(g.drawing)
-	lenLabel := len(e.text)
+	lenLabel := textWidth(e.text)
 	if lenLabel == 0 {
 		return d
 	}
@@ -561,6 +561,7 @@ func (d *drawing) drawTextOnLine(line []drawingCoord, label string, nearHead boo
 	// |---------|
 	//     123
 	log.Debugf("Drawing text '%s' on drawingline %v", label, line)
+	labelWidth := textWidth(label)
 	if len(line) == 0 {
 		return
 	}
@@ -583,12 +584,12 @@ func (d *drawing) drawTextOnLine(line []drawingCoord, label string, nearHead boo
 	middleY := minY + (maxY-minY)/2
 	if minY == maxY {
 		span := maxX - minX
-		if span < len(label)+2 {
+		if span < labelWidth+2 {
 			// Not enough room to place the label with padding on both sides
 			return
 		}
 
-		available := span - len(label)
+		available := span - labelWidth
 		leftLen := available / 2
 		rightLen := available - leftLen
 
@@ -639,14 +640,14 @@ func (d *drawing) drawTextOnLine(line []drawingCoord, label string, nearHead boo
 		if startX <= minX {
 			startX = minX + 1
 		}
-		if end := startX + len(label); end >= maxX {
-			startX = maxX - len(label) - 1
+		if end := startX + labelWidth; end >= maxX {
+			startX = maxX - labelWidth - 1
 		}
 		startLabelCoord := drawingCoord{x: startX, y: middleY}
 		d.drawText(startLabelCoord, label)
 		return
 	}
 
-	startLabelCoord := drawingCoord{x: middleX - len(label)/2, y: middleY}
+	startLabelCoord := drawingCoord{x: middleX - labelWidth/2, y: middleY}
 	d.drawText(startLabelCoord, label)
 }
