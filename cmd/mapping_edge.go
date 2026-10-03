@@ -138,6 +138,41 @@ func (g *graph) determineLabelLine(e *edge) {
 	g.columnWidth[middleX] = Max(g.columnWidth[middleX], desiredWidth) // Wrap with dashes + arrowhead
 	log.Debugf("New column sizes: %v", g.columnWidth)
 	e.labelLine = largestLine
+	if !useAscii && largestLine[0].x == largestLine[1].x && headStyle != HeadStyleNone && e.arrowDir != arrowDirOpen {
+		g.reserveLineClearance(largestLine, 3)
+	}
+}
+
+func (g *graph) reserveArrowHeadClearance(connection *edge) {
+	if !useAscii && headStyle != HeadStyleNone && connection.arrowDir == arrowDirBoth && len(connection.path) == 2 {
+		g.reserveLineClearance(connection.path, 2)
+	}
+}
+
+func (g *graph) reserveLineClearance(line []gridCoord, minimumCells int) {
+	if useAscii || len(line) != 2 || line[0].Equals(line[1]) {
+		return
+	}
+	endpoints := g.lineToDrawing(line)
+	bandSizes := g.columnWidth
+	startIndex, endIndex := line[0].x, line[1].x
+	availableCells := Abs(endpoints[0].x-endpoints[1].x) - 1
+	if line[0].x == line[1].x {
+		bandSizes = g.rowHeight
+		startIndex, endIndex = line[0].y, line[1].y
+		availableCells = Abs(endpoints[0].y-endpoints[1].y) - 1
+	} else if line[0].y != line[1].y {
+		return
+	}
+	if availableCells >= minimumCells {
+		return
+	}
+	middleBand := Min(startIndex, endIndex) + Abs(startIndex-endIndex)/2
+	extraCells := minimumCells - availableCells
+	if middleBand == startIndex || middleBand == endIndex {
+		extraCells *= 2
+	}
+	bandSizes[middleBand] += extraCells
 }
 
 func (g graph) calculateLineWidth(line []gridCoord) int {

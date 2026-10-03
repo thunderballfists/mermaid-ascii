@@ -10,6 +10,11 @@ import (
 
 func renderAuditGraph(t *testing.T, source string, ascii bool, padding int, heads HeadStyle) (graph, string) {
 	t.Helper()
+	return renderAuditGraphWithPadding(t, source, ascii, padding, padding, heads)
+}
+
+func renderAuditGraphWithPadding(t *testing.T, source string, ascii bool, paddingX, paddingY int, heads HeadStyle) (graph, string) {
+	t.Helper()
 	originalASCII, originalHeads, originalDirection := useAscii, headStyle, graphDirection
 	defer func() {
 		useAscii, headStyle, graphDirection = originalASCII, originalHeads, originalDirection
@@ -19,7 +24,7 @@ func renderAuditGraph(t *testing.T, source string, ascii bool, padding int, head
 	if err != nil {
 		t.Fatal(err)
 	}
-	properties.paddingX, properties.paddingY = padding, padding
+	properties.paddingX, properties.paddingY = paddingX, paddingY
 	rendered := mkGraph(properties)
 	rendered.setStyleClasses(properties)
 	rendered.setSubgraphs(properties.subgraphs)
@@ -161,7 +166,7 @@ func knownAuditDefects(name string, ascii bool, padding int, heads HeadStyle) []
 	}
 	defects := []string{}
 	hasHeads := ascii || heads != HeadStyleNone
-	if name == "undirected" && ascii || name == "bidirectional" && (ascii || padding == 1 && hasHeads) || (name == "cycle" && padding == 1 || name == "parallel" || name == "long-label" && padding == 1) && hasHeads {
+	if name == "undirected" && ascii || name == "bidirectional" && ascii || (name == "cycle" && padding == 1 || name == "parallel" || name == "long-label" && ascii && padding == 1) && hasHeads {
 		defects = append(defects, "arrowhead-count")
 	}
 	if name == "parallel" || ascii && (name == "unicode-labels" || name == "grapheme-labels") {

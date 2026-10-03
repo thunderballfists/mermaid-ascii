@@ -45,8 +45,8 @@ Regression tests cover accents, combining marks, CJK, emoji/flags, zero-width
 text, labels merged over routes, colored labels, and long group titles. Audit
 expectations remove only the extended-mode label-loss defects. ASCII remains
 byte-for-byte compatible, including its existing Unicode-label defects, and all
-existing ASCII/extended goldens remained untouched in that milestone. Arrowhead,
-routing, and tight-padding group/self-loop defects below are still open.
+existing ASCII/extended goldens remained untouched in that milestone. Remaining
+arrowhead, routing, and tight-padding group/self-loop defects are tracked below.
 
 ## Unicode junction correction
 
@@ -74,13 +74,40 @@ Validation: `go test ./... -count=1`, `go vet ./...`, and a standard-Go WASM bui
 with a Node runtime junction check pass. TinyGo remains blocked by the previously
 observed missing `wasm-opt`; no fresh TinyGo demo or Pages deployment is claimed.
 
+## Unicode clearance correction
+
+The third repair milestone (2026-10-03) reserves drawable cells during mapping,
+before node coordinates and drawings are finalized, only when `useAscii=false`.
+Straight bidirectional edges with visible heads reserve at least two cells, so
+tight horizontal/vertical gaps retain both heads. Vertical label segments with
+visible heads reserve at least three cells, placing the label on a separate row
+between the endpoints. Existing horizontal label-width sizing is retained.
+
+Only the physical clearance deficit is added; larger requested padding remains
+unchanged. Coordinates refer to band centers, so endpoint-band growth accounts
+for its half-span contribution. Unlabeled single-head edges, undirected edges,
+and suppressed heads do not acquire these new minimums. Head glyph selection,
+route selection, and ASCII behavior are unchanged. All existing ASCII and Unicode
+goldens remain untouched in this milestone.
+
+Tests cover LR/TD bidirectional heads, all head styles, padding 1/2/5, forward/
+backward/bidirectional/undirected vertical labels, terminal-width graphemes,
+asymmetric padding, band-center arithmetic, repeated reservations, and literal
+ASCII compatibility. Audit expectations remove only the corrected Unicode
+bidirectional and vertical-label head-loss cases. Separate-edge cycles, parallel
+routes, tight group framing, and self-loop allocation remain open.
+
+Validation: `go test ./... -count=1`, `go vet ./...`, and standard-Go WASM/Node
+runtime checks pass. TinyGo still fails because `wasm-opt` is missing; the demo
+build and Pages deployment are not claimed as verified.
+
 ## Confirmed defects
 
 | Case | Observation | Scope / cause |
 | --- | --- | --- |
-| `graph LR; A<-->B`, padding 1 | Unicode ends up with only `◄`; the right head is overwritten. | Both heads share one cell in `drawArrowHead`. ASCII draws only a forward head even at padding 5. |
+| `graph LR; A<-->B`, padding 1 | Originally Unicode retained only `◄` because both heads shared one cell. | Corrected in Unicode mode by minimum clearance. ASCII still draws only a forward head, including at padding 5. |
 | `A-->B; B-->A`, padding 1 | Only one head survives. | Both modes route opposite edges through the same one-cell gap. Padding 5 retains both heads but shares the route. |
-| `graph TD; A-->|a long edge label|B`, padding 1 | Label overwrites the arrowhead. | Both modes. Label drawings are merged after heads in `graph.draw`; label-aware minimum vertical clearance is missing. |
+| `graph TD; A-->|a long edge label|B`, padding 1 | Originally the label overwrote the arrowhead. | Now ASCII only. Unicode reserves vertical label/head clearance before drawing. |
 | `A-->B; A-.->C; A==>D` | Originally a dotted branch used `└` on a double vertical trunk that continued above and below it, losing the downward arm. | Corrected in Unicode mode: connectivity merging selects `╟`. ASCII is unchanged. |
 | `A-->|one|B; A-->|two|B` | Only `two` and one head remain. | Both modes. The paths are identical; later labels/heads overwrite earlier edges. |
 | `A[Café]-->|é|B[東京]` | Labels become `CafÃ©`, `Ã©`, and byte-derived CJK mojibake; box widths are inflated. | Originally both modes; now ASCII only. Extended-mode measurement/drawing is corrected. |
@@ -93,9 +120,11 @@ Semicolons in the table separate lines for readability; the executable sources
 use actual newlines. Head suppression applies only to Unicode; ASCII ignores the
 head-style option, preserving the current compatibility behavior.
 
-## Example: lost vertical head
+## Baseline example: lost vertical head
 
-Source: `graph TD` followed by `A-->|a long edge label|B`; padding 1.
+Source: `graph TD` followed by `A-->|a long edge label|B`; padding 1. This is the
+original Unicode output; the clearance correction now separates the label and
+head onto different rows.
 
 ```text
 ┌───────────────────┐

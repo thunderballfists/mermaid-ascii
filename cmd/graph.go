@@ -297,6 +297,7 @@ func (g *graph) createMapping() {
 	for _, e := range g.edges {
 		g.determinePath(e)
 		g.increaseGridSizeForPath(e.path)
+		g.reserveArrowHeadClearance(e)
 		g.determineLabelLine(e)
 	}
 
