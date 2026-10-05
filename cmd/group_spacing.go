@@ -15,8 +15,8 @@ func (g *graph) reserveGroupClearance() {
 	}
 	for _, before := range g.nodes {
 		for _, after := range g.nodes {
-			horizontal := before.gridCoord.y == after.gridCoord.y && before.gridCoord.x+4 == after.gridCoord.x
-			vertical := before.gridCoord.x == after.gridCoord.x && before.gridCoord.y+4 == after.gridCoord.y
+			horizontal := before.gridCoord.x+4 == after.gridCoord.x && (before.gridCoord.y == after.gridCoord.y || g.groupLanes && graphDirection == "TD")
+			vertical := before.gridCoord.y+4 == after.gridCoord.y && (before.gridCoord.x == after.gridCoord.x || g.groupLanes && graphDirection == "LR")
 			if !horizontal && !vertical {
 				continue
 			}

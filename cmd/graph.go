@@ -42,6 +42,7 @@ type graph struct {
 	subgraphs    []*subgraph
 	offsetX      int
 	offsetY      int
+	groupLanes   bool
 }
 
 type subgraph struct {
@@ -291,6 +292,7 @@ func (g *graph) createMapping() {
 	}
 
 	if !useAscii {
+		g.separateGroupLanes()
 		g.reserveRepeatedPortMargins()
 	}
 	for _, n := range g.nodes {
@@ -307,7 +309,7 @@ func (g *graph) createMapping() {
 	for _, e := range routingEdges {
 		g.determinePath(e)
 		g.increaseGridSizeForPath(e.path)
-		if e.separateRoute && len(e.path) > 2 {
+		if (e.separateRoute || g.groupLanes) && len(e.path) > 2 {
 			g.reserveLineClearance(e.path[:2], 1)
 			g.reserveLineClearance(e.path[len(e.path)-2:], 1)
 		}

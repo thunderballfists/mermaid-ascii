@@ -155,8 +155,38 @@ outer routes after group offsets, child/member
 containment, external-node exclusion, and node-interior preservation. The 104
 Unicode configurations in the original audit matrix now have no expected defects.
 All existing ASCII goldens remain unchanged; repair 7 changes no goldens.
-Interleaved groups whose members already surround unrelated nodes remain a
-limitation of the original node-placement algorithm, not a solved clustering case.
+Interleaved groups whose members already surround unrelated nodes were the next
+confirmed limitation of the original node-placement algorithm.
+
+## Unicode group-lane correction (2026-10-05)
+
+Repair 8 detects member envelopes containing foreign nodes and intersecting
+unrelated group envelopes after the original grid mapping. Only those diagrams
+receive secondary-axis lanes, before band sizing and routing. Primary graph ranks
+are unchanged. The existing group tree supplies deepest node ownership; direct
+nodes retain their relative order at each rank, while child groups receive their
+own contiguous lane blocks. The original grid is rebuilt for the existing router.
+
+Existing group-clearance reservations cover lane boundaries even when the nearest
+members lie at different ranks. Bent edges in reassigned diagrams reserve drawable
+endpoint cells, including existing narrow bands, so attachments cannot fall back
+inside node boxes. Already noninterleaved layouts take the original
+mapping path, and ASCII never enters this correction. No backend, dependency,
+public API, source-file move, or golden change is introduced.
+
+Regression tests cover LR/TD and padding 1/2/5 for sibling and nested interleaving,
+external nodes, labelled cross-group edges, member/external-node containment,
+child containment, unrelated-frame separation, primary-rank preservation, grid
+occupancy, idempotence, and ASCII isolation. This is not an optimal cluster layout
+or an unrestricted-port router; it keeps the existing primary-rank assignment.
+
+Independent review compared 240 grouped diagrams against `bf4272b`: no new
+interior intrusions, lost labels/titles, reduced head counts, panics, membership
+failures, or sibling-frame overlap were observed. Four baseline interior defects
+in diagrams not needing lane separation remain outside this repair. Unit tests,
+vet, standard-Go/TinyGo WASM builds, and six LR/TD/padding WASM containment checks
+pass. No ASCII or Unicode goldens change, and no new Pages or interactive-browser
+validation is claimed.
 
 | Case | Observation | Scope / cause |
 | --- | --- | --- |
@@ -197,7 +227,7 @@ Interactive browser inspection was blocked:
 no browser connector was available and native Brave access was not approved.
 The remote Pages workflow returned no runs, and the Pages API returned 404;
 no deployment or push is claimed. Local passing builds do not establish Pages
-deployment. More general clustering, unlimited ports, and TCSS integration remain
+deployment. Global layout optimization, unlimited ports, and TCSS integration remain
 outside this renderer-repair series.
 
 ## Baseline example: lost vertical head

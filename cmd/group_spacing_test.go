@@ -18,6 +18,12 @@ func TestUnicodeGroupClearance(t *testing.T) {
 				"subgraph First\nsubgraph InnerOne\nA\nend\nend\nsubgraph Second\nsubgraph InnerTwo\nB\nend\nend\nA-->|label|B",
 				"subgraph Group0\nsubgraph Nested0\nD\nend\nE\nend\nB<--|label3|E\nE<--B",
 				"A\nC\nD\nsubgraph Group2\nB\nend\nB<--|label0|C\nD<-->B\nA<--D",
+				"subgraph One\nA-->B\nC\nend\nsubgraph Two\nD-->E\nend",
+				"subgraph Outer\nsubgraph One\nA-->B\nC\nend\nsubgraph Two\nD-->E\nend\nend",
+				"subgraph One\nA-->B\nend\nC-->D\nE\nA-->E",
+				"subgraph One\nA-->|inner|B\nC\nend\nsubgraph Two\nD-->|other|E\nend\nC-->|cross|E",
+				"subgraph Group0\nB\nF\nend\nsubgraph Group1\nA\nE\nend\nB<--A\nF<-->|label1|E\nA<--F\nB<-->E",
+				"subgraph Group0\nsubgraph Nested0\nA\nend\nend\nsubgraph Group1\nB\nD\nend\nsubgraph Group2\nC\nend\nE<-->C\nA<--|label2|B\nE<--|label3|D\nA---E",
 			} {
 				t.Run(fmt.Sprintf("%s/padding=%d/%s", direction, padding, source), func(t *testing.T) {
 					rendered, output, panicValue := captureAuditRender(t, "graph "+direction+"\n"+source, false, padding, HeadStylePointer)
@@ -44,6 +50,21 @@ func TestUnicodeGroupClearance(t *testing.T) {
 						for _, child := range group.children {
 							if child.minX <= group.minX || child.maxX >= group.maxX || child.minY <= group.minY || child.maxY >= group.maxY {
 								t.Errorf("child %s is not contained by %s\n%s", child.name, group.name, output)
+							}
+						}
+						for _, other := range rendered.subgraphs {
+							if other == group || len(other.nodes) == 0 {
+								continue
+							}
+							related := false
+							for parent := group.parent; parent != nil; parent = parent.parent {
+								related = related || parent == other
+							}
+							for parent := other.parent; parent != nil; parent = parent.parent {
+								related = related || parent == group
+							}
+							if !related && group.minX <= other.maxX && group.maxX >= other.minX && group.minY <= other.maxY && group.maxY >= other.minY {
+								t.Errorf("unrelated group frames %s and %s overlap\n%s", group.name, other.name, output)
 							}
 						}
 					}
