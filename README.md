@@ -2,6 +2,14 @@
 
 Render mermaid diagrams in your terminal.
 
+Extended output supports display-cell-aware Unicode labels, nested subgraphs,
+separate routes for repeated edges, and opt-in compact boxes and uniform gaps.
+Recent repairs preserve arrowheads, border attachments, junctions, and spaces in
+edge labels. ASCII output retains its existing behavior.
+
+See the [changelog](CHANGELOG.md) for unreleased changes and the
+[renderer audit](automation/render-audit.md) for tested cases and limitations.
+
 ## Quick start
 
 Clone the repository and use the Go toolchain (or the provided `Makefile`) to build the CLI:
@@ -74,11 +82,32 @@ group clearance; it never squeezes a label to fit. This is opt-in, applies only
 to extended output, and is exposed as `lib.Options.UniformSpacing`. It equalizes
 border-to-border gaps, not box sizes or distances between node centers.
 
+For compact boxes with evenly spaced blocks and a multiword arrow label:
+
+```bash
+./mermaid-ascii --boxPaddingX 1 --boxPaddingY 0 --uniformSpacing <<'MERMAID'
+graph LR
+A-->|a long edge label|B
+B-->C
+MERMAID
+```
+
+```text
+┌───┐                   ┌───┐                   ┌───┐
+│ A ├─a long edge label►│ B ├──────────────────►│ C │
+└───┘                   └───┘                   └───┘
+```
+
 In the demo, enable extended characters and set **Box padding Y** to `0`.
 **Uniform gaps** enables equal spacing. Shared URLs retain both settings.
 The WASM options use `boxPaddingX`, `boxPaddingY`, and `uniformSpacing` JSON keys.
 After `make wasm`, run `node automation/wasm-smoke.cjs` to check the built renderer
 through the worker message handler.
+
+Build with `make wasm`, then serve with `make serve` and open
+`http://localhost:5173` (TinyGo and Python 3 required). `make serve` rebuilds and
+copies the site files and TinyGo runtime into `dist/`. Node 18+ is required for
+the smoke test; browser interaction still needs a separate manual check.
 
 ```bash
 $ cat test.mermaid
@@ -256,12 +285,16 @@ Available Commands:
   web         HTTP server for rendering mermaid diagrams.
 
 Flags:
+  -a, --ascii               Don't use extended character set
   -p, --borderPadding int   Padding between text and border (default 1)
+      --boxPaddingX int     Horizontal box padding (extended characters only) (default 1)
+      --boxPaddingY int     Vertical box padding (extended characters only; 0 for compact boxes) (default 1)
   -c, --coords              Show coordinates
-  -f, --file string         Mermaid file to parse
+  -f, --file string         Mermaid file to parse (use '-' for stdin)
   -h, --help                help for mermaid-ascii
   -x, --paddingX int        Horizontal space between nodes (default 5)
   -y, --paddingY int        Vertical space between nodes (default 5)
+      --uniformSpacing      Equal gaps between node bands on each axis (extended characters only)
   -v, --verbose             Verbose output
 
 Use "mermaid-ascii [command] --help" for more information about a command.
@@ -416,7 +449,7 @@ The baseline components for Mermaid work, but there are a lot of things that are
 - [x] `classDef` and `class`
 - [x] `A & B`
 - [x] Multiple arrows on one line (like `A --> B --> C`)
-- [ ] `subgraph`
+- [x] `subgraph` (including nested groups)
 - [ ] Shapes other than rectangles
 - [ ] Whitespacing and comments
 
@@ -426,3 +459,8 @@ The baseline components for Mermaid work, but there are a lot of things that are
 - [ ] Diagonal arrows
 - [ ] Place nodes in a more compact way
 - [ ] Prevent rendering more than X characters wide (like default 80 for terminal width)
+
+Routing still uses a finite set of cardinal ports, and node placement retains
+the existing rank assignment. The repair tests cover reported cases rather than
+every possible graph. Compact padding specifies minimum padding; shared bands
+and routing clearance may expand boxes or gaps.

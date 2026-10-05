@@ -250,7 +250,7 @@ self-loop, and spaced-label cases. ASCII snapshots remain byte-for-byte unchange
 These checks cover the reported repros; they do not establish correctness for
 every possible graph or remove the existing limits on available ports.
 
-## Final validation (2026-10-03)
+## Earlier validation (2026-10-03)
 
 `go test ./... -count=1`, `go vet ./...`, standard-Go WASM builds, and TinyGo 0.39.0
 builds pass. The earlier missing `wasm-opt` blocker was resolved for validation
