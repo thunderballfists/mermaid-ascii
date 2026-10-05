@@ -229,19 +229,26 @@ Five demo tests cover dispatch, URL round trips, zero values, mode toggling, and
 reset. The local demo responds on port 5174. The Pages workflow now runs unit,
 demo, and built-WASM checks; no remote build or deployment is claimed.
 
-Broader probes also identified unresolved routing cases outside the passing
-padding/spacing matrix:
+The follow-up repair milestones address all three cases found by broader probes:
 
-- Horizontal inline labels with spaces still display dashes in those spaces.
-- With LR, gap 1, `A<-->B; B-->C; D-->C` can route through D's interior and lose
-  a head. Compact boxes can also lose D's label.
-- With LR, gap 1, `A-->|loop|A; A-->B; B-->C` has a displaced port; box padding
-  `(0, 0)` can lose the loop label. The geometry defect also occurs with default
-  box padding, where the loop label remains visible.
+- Fix 12 reserves a drawable cell outside every bent Unicode endpoint, preventing
+  short segments from writing junctions inside boxes.
+- Fix 13 assigns distinct incident arrowhead ports and reserves origin margins
+  when a root needs another port. `A<-->B; B-->C; D-->C` now retains all four heads
+  and D's label. Three Unicode snapshots change to preserve previously lost heads.
+- Fix 14 applies physical label clearance and safe placement to labelled
+  self-loops. `A-->|loop|A; A-->B; B-->C` now keeps the label and ports on borders
+  with box padding `(0, 0)` as well as default padding.
+- Fix 15 composites complete Unicode arrow-label spans, including spaces, so
+  labels no longer show underlying dashes between words.
 
-These reproduce without uniform spacing. The next renderer repair should
-address port placement and interior protection for these cases before expanding
-the compact-mode matrix.
+New regression matrices check both directions, small/default gaps, compact and
+default boxes, all four head styles, and uniform/adaptive spacing. They assert
+label/head preservation, node interiors, actual port locations, and equal visible
+gaps where requested. The built-WASM worker smoke includes the repaired branch,
+self-loop, and spaced-label cases. ASCII snapshots remain byte-for-byte unchanged.
+These checks cover the reported repros; they do not establish correctness for
+every possible graph or remove the existing limits on available ports.
 
 ## Final validation (2026-10-03)
 

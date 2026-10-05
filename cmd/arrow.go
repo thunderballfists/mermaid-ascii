@@ -566,6 +566,26 @@ func (g *graph) drawArrowLabel(e *edge) *drawing {
 	return d
 }
 
+func (g *graph) overlayArrowLabelText(connection *edge, label *drawing) {
+	width := textWidth(connection.text)
+	if width == 0 || label == nil {
+		return
+	}
+	var position drawingCoord
+	if connection.labelPosition != nil {
+		position = *connection.labelPosition
+	} else {
+		var available bool
+		position, available = labelPositionOnLine(g.lineToDrawing(connection.labelLine), connection.text, connection.nearHead)
+		if !available {
+			return
+		}
+	}
+	for column := 0; column < width; column++ {
+		(*g.drawing)[position.x+column][position.y] = (*label)[position.x+column][position.y]
+	}
+}
+
 func (d *drawing) drawTextOnLine(line []drawingCoord, label string, nearHead bool) {
 	position, available := labelPositionOnLine(line, label, nearHead)
 	if available {

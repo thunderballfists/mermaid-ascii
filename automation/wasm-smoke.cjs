@@ -64,6 +64,10 @@ async function render(source, options = {}) {
   assert.equal(loop.type, "result");
   assert.ok(loop.text.includes("loop"));
   assert.equal((loop.text.match(/[►◄▲▼]/g) || []).length, 3);
+  const spacedLabel = await render("graph LR\nA-->|Café 東京 returns|B", { boxPaddingY: 0 });
+  assert.equal(spacedLabel.type, "result");
+  assert.ok(spacedLabel.text.includes("Café 東京 returns"));
+  assert.equal((spacedLabel.text.match(/[►◄▲▼]/g) || []).length, 1);
   const uniform = await render(source, { paddingX: 1, boxPaddingY: 0, uniformSpacing: true });
   assert.equal(uniform.type, "result");
   assert.ok(uniform.text.includes("long_edge_label"));

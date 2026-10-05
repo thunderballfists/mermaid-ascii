@@ -616,6 +616,11 @@ func (g *graph) draw() *drawing {
 	g.drawing = mergeDrawings(g.drawing, drawingCoord{0, 0}, arrowHeadDrawings...)
 	g.drawing = mergeDrawings(g.drawing, drawingCoord{0, 0}, boxStartDrawings...)
 	g.drawing = overlayDrawings(g.drawing, drawingCoord{0, 0}, labelDrawings...)
+	if !useAscii {
+		for index, connection := range g.edges {
+			g.overlayArrowLabelText(connection, labelDrawings[index])
+		}
+	}
 
 	// Draw subgraph labels LAST so they don't get overwritten by arrows
 	g.drawSubgraphLabels()
