@@ -53,6 +53,11 @@ async function render(source, options = {}) {
   });
   assert.equal(branch.type, "result");
   assert.ok(branch.text.includes("│D│"));
+  const branchHeads = await render("graph LR\nA<-->B\nB-->C\nD-->C", {
+    paddingX: 1, paddingY: 1, boxPaddingX: 0, boxPaddingY: 0,
+  });
+  assert.equal(branchHeads.type, "result");
+  assert.equal((branchHeads.text.match(/[►◄▲▼]/g) || []).length, 4);
   const uniform = await render(source, { paddingX: 1, boxPaddingY: 0, uniformSpacing: true });
   assert.equal(uniform.type, "result");
   assert.ok(uniform.text.includes("long_edge_label"));

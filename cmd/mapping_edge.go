@@ -29,7 +29,7 @@ func (g *graph) determinePath(e *edge) {
 		return
 	}
 	defer func() {
-		if !useAscii && len(g.subgraphs) > 0 {
+		if !useAscii {
 			g.routeRepeatedEdge(e)
 		}
 	}()

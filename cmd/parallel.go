@@ -5,14 +5,7 @@ func (g *graph) reserveRepeatedPortMargins() {
 		return
 	}
 	heads := map[*node]int{}
-	repeated := map[*node]bool{}
-	pairs := map[[2]int]bool{}
 	for _, connection := range g.edges {
-		pair := [2]int{Min(connection.from.index, connection.to.index), Max(connection.from.index, connection.to.index)}
-		if pairs[pair] && connection.from != connection.to {
-			repeated[connection.from], repeated[connection.to] = true, true
-		}
-		pairs[pair] = true
 		if connection.arrowDir == arrowDirBackward || connection.arrowDir == arrowDirBoth {
 			heads[connection.from]++
 		}
@@ -29,7 +22,7 @@ func (g *graph) reserveRepeatedPortMargins() {
 		if contentNode.gridCoord.y == 0 {
 			capacity--
 		}
-		if (repeated[contentNode] || len(g.subgraphs) > 0) && heads[contentNode] > capacity {
+		if heads[contentNode] > capacity {
 			if contentNode.gridCoord.x == 0 {
 				shiftX = 4
 				capacity++
