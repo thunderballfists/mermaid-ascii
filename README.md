@@ -18,7 +18,8 @@ make mermaid-ascii
 ./mermaid-ascii --help
 ```
 
-The project ships with Go unit tests that can be executed with `go test ./...`.
+Run Go unit tests with `go test ./...` and demo control tests with
+`node --test automation/site.test.cjs`. `make test` runs both (Node 18+ required).
 
 ## Installation
 
@@ -72,6 +73,12 @@ The renderer expands them to the largest gap needed by labels, arrowheads, or
 group clearance; it never squeezes a label to fit. This is opt-in, applies only
 to extended output, and is exposed as `lib.Options.UniformSpacing`. It equalizes
 border-to-border gaps, not box sizes or distances between node centers.
+
+In the demo, enable extended characters and set **Box padding Y** to `0`.
+**Uniform gaps** enables equal spacing. Shared URLs retain both settings.
+The WASM options use `boxPaddingX`, `boxPaddingY`, and `uniformSpacing` JSON keys.
+After `make wasm`, run `node automation/wasm-smoke.cjs` to check the built renderer
+through the worker message handler.
 
 ```bash
 $ cat test.mermaid

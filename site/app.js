@@ -4,6 +4,9 @@
     extended: document.getElementById("extended-toggle"),
     paddingX: document.getElementById("padding-x"),
     paddingY: document.getElementById("padding-y"),
+    boxPaddingX: document.getElementById("box-padding-x"),
+    boxPaddingY: document.getElementById("box-padding-y"),
+    uniformSpacing: document.getElementById("uniform-spacing"),
     exampleSelect: document.getElementById("example-select"),
     heads: document.getElementById("heads"),
     renderBtn: document.getElementById("render-btn"),
@@ -16,6 +19,8 @@
 
   const SAMPLE_MERMAID = "graph LR\nA-->B";
   const DEFAULT_PADDING = 5;
+  const DEFAULT_BOX_PADDING = 1;
+  const BOX_PADDING_AXES = ["boxPaddingX", "boxPaddingY"];
   const DEBOUNCE_MS = 300;
 
   const state = {
@@ -38,6 +43,9 @@
     mermaid: "m",
     paddingX: "x",
     paddingY: "y",
+    boxPaddingX: "bx",
+    boxPaddingY: "by",
+    uniformSpacing: "u",
     extended: "ext",
     heads: "heads",
   };
@@ -80,7 +88,20 @@
     if (elements.heads && elements.heads.value) {
       opts.heads = elements.heads.value;
     }
+    if (!opts.useAscii) {
+      for (const axis of BOX_PADDING_AXES) {
+        const value = parseInt(elements[axis].value, 10);
+        if (!Number.isNaN(value)) opts[axis] = value;
+      }
+      opts.uniformSpacing = elements.uniformSpacing.checked;
+    }
     return opts;
+  }
+
+  function updateExtendedControls() {
+    for (const control of [...BOX_PADDING_AXES, "uniformSpacing"]) {
+      elements[control].disabled = !elements.extended.checked;
+    }
   }
 
   function readStateFromURL() {
@@ -105,6 +126,16 @@
       const raw = params.get(URL_KEYS.extended);
       parsed.useExtended = raw === "1" || raw === "true";
     }
+    for (const axis of BOX_PADDING_AXES) {
+      if (params.has(URL_KEYS[axis])) {
+        const value = parseInt(params.get(URL_KEYS[axis]), 10);
+        if (!Number.isNaN(value)) parsed[axis] = value;
+      }
+    }
+    if (params.has(URL_KEYS.uniformSpacing)) {
+      const raw = params.get(URL_KEYS.uniformSpacing);
+      parsed.uniformSpacing = raw === "1" || raw === "true";
+    }
     if (params.has(URL_KEYS.heads)) {
       parsed.heads = params.get(URL_KEYS.heads) || "";
     }
@@ -124,6 +155,15 @@
     if (typeof parsed.useExtended === "boolean") {
       elements.extended.checked = parsed.useExtended;
     }
+    for (const axis of BOX_PADDING_AXES) {
+      if (typeof parsed[axis] === "number" && !Number.isNaN(parsed[axis])) {
+        elements[axis].value = String(parsed[axis]);
+      }
+    }
+    if (typeof parsed.uniformSpacing === "boolean") {
+      elements.uniformSpacing.checked = parsed.uniformSpacing;
+    }
+    updateExtendedControls();
     if (parsed.heads && elements.heads) {
       const matchingOption = Array.from(elements.heads.options || []).some(
         (opt) => opt.value === parsed.heads
@@ -138,13 +178,19 @@
     const paddingX = parseInt(elements.paddingX.value, 10);
     const paddingY = parseInt(elements.paddingY.value, 10);
     const heads = elements.heads ? elements.heads.value : "pointer";
-    return {
+    const snapshot = {
       mermaid: elements.input.value || "",
       paddingX: Number.isNaN(paddingX) ? null : paddingX,
       paddingY: Number.isNaN(paddingY) ? null : paddingY,
       useExtended: Boolean(elements.extended.checked),
       heads,
+      uniformSpacing: elements.uniformSpacing.checked,
     };
+    for (const axis of BOX_PADDING_AXES) {
+      const value = parseInt(elements[axis].value, 10);
+      snapshot[axis] = Number.isNaN(value) ? null : value;
+    }
+    return snapshot;
   }
 
   function syncURLFromForm() {
@@ -177,6 +223,18 @@
       params.set(URL_KEYS.extended, "1");
     } else {
       params.delete(URL_KEYS.extended);
+    }
+    for (const axis of BOX_PADDING_AXES) {
+      if (snapshot[axis] !== null && snapshot[axis] !== DEFAULT_BOX_PADDING) {
+        params.set(URL_KEYS[axis], String(snapshot[axis]));
+      } else {
+        params.delete(URL_KEYS[axis]);
+      }
+    }
+    if (snapshot.uniformSpacing) {
+      params.set(URL_KEYS.uniformSpacing, "1");
+    } else {
+      params.delete(URL_KEYS.uniformSpacing);
     }
 
     if (snapshot.heads && snapshot.heads !== "pointer") {
@@ -474,6 +532,9 @@
     }
     elements.paddingX.value = String(DEFAULT_PADDING);
     elements.paddingY.value = String(DEFAULT_PADDING);
+    for (const axis of BOX_PADDING_AXES) elements[axis].value = String(DEFAULT_BOX_PADDING);
+    elements.uniformSpacing.checked = false;
+    updateExtendedControls();
     if (elements.exampleSelect) {
       elements.exampleSelect.value = "";
     }
@@ -561,15 +622,19 @@
 
     elements.input.addEventListener("input", () => scheduleRender());
 
-    [elements.paddingX, elements.paddingY].forEach((el) => {
+    [elements.paddingX, elements.paddingY, ...BOX_PADDING_AXES.map(axis => elements[axis])].forEach((el) => {
       if (el) {
         el.addEventListener("input", () => scheduleRender());
       }
     });
 
     if (elements.extended) {
-      elements.extended.addEventListener("change", () => scheduleRender());
+      elements.extended.addEventListener("change", () => {
+        updateExtendedControls();
+        scheduleRender();
+      });
     }
+    elements.uniformSpacing.addEventListener("change", () => scheduleRender());
 
     if (elements.heads) {
       elements.heads.addEventListener("change", () => scheduleRender(true));
@@ -584,6 +649,8 @@
     elements.input.value = SAMPLE_MERMAID;
     elements.paddingX.value = String(DEFAULT_PADDING);
     elements.paddingY.value = String(DEFAULT_PADDING);
+    for (const axis of BOX_PADDING_AXES) elements[axis].value = String(DEFAULT_BOX_PADDING);
+    elements.uniformSpacing.checked = false;
     if (elements.heads) {
       elements.heads.value = "pointer";
     }
@@ -592,6 +659,7 @@
     if (Object.keys(initialState).length > 0) {
       applyStateToForm(initialState);
     }
+    updateExtendedControls();
     attachEvents();
     elements.output.setAttribute("aria-busy", "true");
     loadRendererViaWorker();

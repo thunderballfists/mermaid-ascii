@@ -205,6 +205,44 @@ Semicolons in the table separate lines for readability; the executable sources
 use actual newlines. Head suppression applies only to Unicode; ASCII ignores the
 head-style option, preserving the current compatibility behavior.
 
+## Opt-in box padding and uniform gaps (2026-10-05)
+
+`--boxPaddingX` and `--boxPaddingY` control independent minimum padding inside
+Unicode boxes. Defaults remain `(1, 1)`; omitted axes retain legacy `-p` behavior.
+Setting Y to zero removes blank rows in simple boxes. Shared grid bands and
+routing may enlarge a box. Zero-width labels retain a content cell so arrows
+cannot overwrite them on a border.
+
+`--uniformSpacing` expands visible gaps between adjacent node bands to the
+largest required gap on each axis. It includes extra space in trailing border
+bands and reruns after label placement enlarges a band. It equalizes gaps, not
+box sizes or center-to-center pitch. Default spacing remains adaptive.
+
+The Go API, WASM JSON options, and demo expose all three settings. Demo URLs
+retain box padding as `bx`/`by` and uniform spacing as `u=1`. ASCII ignores these
+options; its original goldens remain unchanged.
+
+Validation: `go test ./...`, `go vet ./...`, `make test`, TinyGo and standard Go
+WASM builds, and `node automation/wasm-smoke.cjs` pass locally. The smoke executes
+the built renderer through the actual worker handler with Node worker API shims.
+Five demo tests cover dispatch, URL round trips, zero values, mode toggling, and
+reset. The local demo responds on port 5174. The Pages workflow now runs unit,
+demo, and built-WASM checks; no remote build or deployment is claimed.
+
+Broader probes also identified unresolved routing cases outside the passing
+padding/spacing matrix:
+
+- Horizontal inline labels with spaces still display dashes in those spaces.
+- With LR, gap 1, `A<-->B; B-->C; D-->C` can route through D's interior and lose
+  a head. Compact boxes can also lose D's label.
+- With LR, gap 1, `A-->|loop|A; A-->B; B-->C` has a displaced port; box padding
+  `(0, 0)` can lose the loop label. The geometry defect also occurs with default
+  box padding, where the loop label remains visible.
+
+These reproduce without uniform spacing. The next renderer repair should
+address port placement and interior protection for these cases before expanding
+the compact-mode matrix.
+
 ## Final validation (2026-10-03)
 
 `go test ./... -count=1`, `go vet ./...`, standard-Go WASM builds, and TinyGo 0.39.0

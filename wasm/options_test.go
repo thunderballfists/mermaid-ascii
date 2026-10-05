@@ -14,11 +14,27 @@ func TestDecodeOptionsEmpty(t *testing.T) {
 	if opts.UseASCII {
 		t.Fatalf("expected UseASCII to be false")
 	}
-	if opts.PaddingX != nil || opts.PaddingY != nil {
+	if opts.PaddingX != nil || opts.PaddingY != nil || opts.BoxPaddingX != nil || opts.BoxPaddingY != nil || opts.UniformSpacing {
 		t.Fatalf("expected padding pointers to be nil, got %+v", opts)
 	}
 	if opts.Heads != "" {
 		t.Fatalf("expected empty Heads, got %q", opts.Heads)
+	}
+}
+
+func TestDecodeOptionsBoxLayout(t *testing.T) {
+	opts, err := decodeOptions(`{"boxPaddingX":3,"boxPaddingY":0,"uniformSpacing":true}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertPtrEqual(t, opts.BoxPaddingX, 3)
+	assertPtrEqual(t, opts.BoxPaddingY, 0)
+	if !opts.UniformSpacing {
+		t.Fatal("uniform spacing option lost")
+	}
+	opts, err = decodeOptions(`{"boxPaddingX":null,"boxPaddingY":null}`)
+	if err != nil || opts.BoxPaddingX != nil || opts.BoxPaddingY != nil || opts.UniformSpacing {
+		t.Fatalf("null must preserve defaults: %+v, %v", opts, err)
 	}
 }
 

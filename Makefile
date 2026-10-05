@@ -43,3 +43,4 @@ serve: wasm
 test:
 	mkdir -p $(GOCACHE)
 	GOCACHE=$(GOCACHE) go test ./...
+	node --test automation/site.test.cjs

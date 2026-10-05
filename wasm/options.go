@@ -8,10 +8,13 @@ import (
 )
 
 type wasmOptions struct {
-	UseASCII bool   `json:"useAscii"`
-	PaddingX *int   `json:"paddingX"`
-	PaddingY *int   `json:"paddingY"`
-	Heads    string `json:"heads"`
+	UseASCII       bool   `json:"useAscii"`
+	PaddingX       *int   `json:"paddingX"`
+	PaddingY       *int   `json:"paddingY"`
+	BoxPaddingX    *int   `json:"boxPaddingX"`
+	BoxPaddingY    *int   `json:"boxPaddingY"`
+	UniformSpacing bool   `json:"uniformSpacing"`
+	Heads          string `json:"heads"`
 }
 
 func decodeOptions(optsJSON string) (lib.Options, error) {
@@ -25,9 +28,12 @@ func decodeOptions(optsJSON string) (lib.Options, error) {
 	}
 
 	return lib.Options{
-		UseASCII: intermediate.UseASCII,
-		PaddingX: intermediate.PaddingX,
-		PaddingY: intermediate.PaddingY,
-		Heads:    intermediate.Heads,
+		UseASCII:       intermediate.UseASCII,
+		PaddingX:       intermediate.PaddingX,
+		PaddingY:       intermediate.PaddingY,
+		BoxPaddingX:    intermediate.BoxPaddingX,
+		BoxPaddingY:    intermediate.BoxPaddingY,
+		UniformSpacing: intermediate.UniformSpacing,
+		Heads:          intermediate.Heads,
 	}, nil
 }

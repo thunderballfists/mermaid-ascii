@@ -26,6 +26,11 @@ jobs:
         with:
           tinygo-version: '0.39.0'
 
+      - name: Test renderer and demo controls
+        run: |
+          go test ./...
+          node --test automation/site.test.cjs
+
       - name: Build WASM
         run: |
           mkdir -p dist
@@ -33,6 +38,9 @@ jobs:
           cp "$(tinygo env TINYGOROOT)/targets/wasm_exec.js" dist/
           cp -r site/* dist/
           touch dist/.nojekyll
+
+      - name: Test built WASM and worker
+        run: node automation/wasm-smoke.cjs
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

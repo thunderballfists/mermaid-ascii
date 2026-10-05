@@ -28,12 +28,24 @@
             Use extended characters
           </label>
           <label class="control">
-            Padding X
+            Gap X
             <input type="number" id="padding-x" min="0" step="1" />
           </label>
           <label class="control">
-            Padding Y
+            Gap Y
             <input type="number" id="padding-y" min="0" step="1" />
+          </label>
+          <label class="control">
+            Box padding X
+            <input type="number" id="box-padding-x" min="0" step="1" value="1" disabled />
+          </label>
+          <label class="control">
+            Box padding Y
+            <input type="number" id="box-padding-y" min="0" step="1" value="1" disabled title="Use 0 to remove blank rows inside boxes" />
+          </label>
+          <label class="control" title="Expand gaps to the largest space required on each axis">
+            <input type="checkbox" id="uniform-spacing" disabled />
+            Uniform gaps
           </label>
           <label class="control" for="example-select">
             Example
