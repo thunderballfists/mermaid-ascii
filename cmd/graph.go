@@ -315,7 +315,7 @@ func (g *graph) createMapping() {
 	for _, e := range routingEdges {
 		g.determinePath(e)
 		g.increaseGridSizeForPath(e.path)
-		if (e.separateRoute || g.groupLanes) && len(e.path) > 2 {
+		if !useAscii && len(e.path) > 2 {
 			g.reserveLineClearance(e.path[:2], 1)
 			g.reserveLineClearance(e.path[len(e.path)-2:], 1)
 		}

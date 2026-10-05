@@ -48,6 +48,11 @@ async function render(source, options = {}) {
   assert.match(invalid.error, /non-negative/);
   assert.equal((await render("graph LR\nA")).text, defaultBox);
   const source = "graph LR\nA-->|long_edge_label|B\nB-->C";
+  const branch = await render("graph LR\nA<-->B\nB-->C\nD-->C", {
+    paddingX: 1, paddingY: 1, boxPaddingX: 0, boxPaddingY: 0, heads: "none",
+  });
+  assert.equal(branch.type, "result");
+  assert.ok(branch.text.includes("│D│"));
   const uniform = await render(source, { paddingX: 1, boxPaddingY: 0, uniformSpacing: true });
   assert.equal(uniform.type, "result");
   assert.ok(uniform.text.includes("long_edge_label"));
