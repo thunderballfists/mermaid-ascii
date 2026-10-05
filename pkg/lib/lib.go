@@ -8,12 +8,13 @@ import (
 // Options configures how a Mermaid diagram should be rendered.
 // Nil padding fields leave the renderer's existing defaults unchanged.
 type Options struct {
-	UseASCII    bool
-	PaddingX    *int
-	PaddingY    *int
-	BoxPaddingX *int
-	BoxPaddingY *int
-	Heads       string
+	UseASCII       bool
+	PaddingX       *int
+	PaddingY       *int
+	BoxPaddingX    *int
+	BoxPaddingY    *int
+	UniformSpacing bool
+	Heads          string
 }
 
 // Renderer produces a textual representation of a Mermaid diagram.

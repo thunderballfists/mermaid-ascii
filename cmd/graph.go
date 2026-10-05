@@ -29,22 +29,23 @@ func (g graph) lineToDrawing(line []gridCoord) []drawingCoord {
 }
 
 type graph struct {
-	nodes        []*node
-	edges        []*edge
-	drawing      *drawing
-	grid         map[gridCoord]*node
-	columnWidth  map[int]int
-	rowHeight    map[int]int
-	styleClasses map[string]styleClass
-	styleType    string
-	paddingX     int
-	paddingY     int
-	boxPaddingX  *int
-	boxPaddingY  *int
-	subgraphs    []*subgraph
-	offsetX      int
-	offsetY      int
-	groupLanes   bool
+	nodes          []*node
+	edges          []*edge
+	drawing        *drawing
+	grid           map[gridCoord]*node
+	columnWidth    map[int]int
+	rowHeight      map[int]int
+	styleClasses   map[string]styleClass
+	styleType      string
+	paddingX       int
+	paddingY       int
+	boxPaddingX    *int
+	boxPaddingY    *int
+	uniformSpacing bool
+	subgraphs      []*subgraph
+	offsetX        int
+	offsetY        int
+	groupLanes     bool
 }
 
 type subgraph struct {
@@ -122,6 +123,7 @@ func (g *graph) setStyleClasses(properties *graphProperties) {
 	g.paddingY = properties.paddingY
 	g.boxPaddingX = properties.boxPaddingX
 	g.boxPaddingY = properties.boxPaddingY
+	g.uniformSpacing = properties.uniformSpacing
 	for _, n := range g.nodes {
 		if n.styleClassName != "" {
 			log.Debugf("Setting style class for node %s to %s", n.name, n.styleClassName)
@@ -320,6 +322,7 @@ func (g *graph) createMapping() {
 		g.reserveArrowHeadClearance(e)
 		g.determineLabelLine(e)
 	}
+	g.equalizeNodeGaps()
 
 	// ! Last point before we manipulate the drawing !
 	log.Debug("Mapping complete, starting to draw")

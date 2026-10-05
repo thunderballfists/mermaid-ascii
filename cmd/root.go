@@ -68,6 +68,7 @@ var rootCmd = &cobra.Command{
 			value, _ := cmd.Flags().GetInt("boxPaddingY")
 			options.BoxPaddingY = &value
 		}
+		options.UniformSpacing, _ = cmd.Flags().GetBool("uniformSpacing")
 		if _, err := lib.Render(string(mermaid), options); err != nil {
 			log.Fatal("Failed to render mermaid input: ", err)
 		}
@@ -96,6 +97,7 @@ func init() {
 	rootCmd.PersistentFlags().IntVarP(&boxBorderPadding, "borderPadding", "p", boxBorderPadding, "Padding between text and border")
 	rootCmd.Flags().Int("boxPaddingX", boxBorderPadding, "Horizontal box padding (extended characters only)")
 	rootCmd.Flags().Int("boxPaddingY", boxBorderPadding, "Vertical box padding (extended characters only; 0 for compact boxes)")
+	rootCmd.Flags().Bool("uniformSpacing", false, "Equal gaps between node bands on each axis (extended characters only)")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -143,6 +145,7 @@ func renderMermaidWithOptions(mermaid string, opts lib.Options) (string, error) 
 	}
 	properties.boxPaddingX = opts.BoxPaddingX
 	properties.boxPaddingY = opts.BoxPaddingY
+	properties.uniformSpacing = opts.UniformSpacing
 
 	result := drawMap(properties)
 	return result, nil

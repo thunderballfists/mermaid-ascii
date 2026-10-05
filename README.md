@@ -67,6 +67,12 @@ The Go API exposes nullable `lib.Options.BoxPaddingX` and `BoxPaddingY` fields;
 nil preserves the existing defaults. Routing and shared grid bands may enlarge
 boxes beyond these minimum paddings.
 
+Use `--uniformSpacing` to keep gaps between node bands equal on each axis.
+The renderer expands them to the largest gap needed by labels, arrowheads, or
+group clearance; it never squeezes a label to fit. This is opt-in, applies only
+to extended output, and is exposed as `lib.Options.UniformSpacing`. It equalizes
+border-to-border gaps, not box sizes or distances between node centers.
+
 ```bash
 $ cat test.mermaid
 graph LR

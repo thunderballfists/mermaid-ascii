@@ -95,6 +95,7 @@ func (g *graph) placeRepeatedRouteLabels() {
 		if !resized {
 			return
 		}
+		g.equalizeNodeGaps()
 		for _, contentNode := range g.nodes {
 			position := g.gridToDrawingCoord(*contentNode.gridCoord, nil)
 			contentNode.setCoord(&position)

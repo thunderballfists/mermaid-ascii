@@ -102,6 +102,11 @@ func TestBoxPaddingPreservesLegacyDefault(t *testing.T) {
 
 func renderBoxPaddingGraph(t *testing.T, source string, gap, boxX, boxY int, heads HeadStyle) (graph, string) {
 	t.Helper()
+	return renderLayoutGraph(t, source, gap, boxX, boxY, heads, false)
+}
+
+func renderLayoutGraph(t *testing.T, source string, gap, boxX, boxY int, heads HeadStyle, uniform bool) (graph, string) {
+	t.Helper()
 	originalASCII, originalHeads, originalDirection := useAscii, headStyle, graphDirection
 	defer func() { useAscii, headStyle, graphDirection = originalASCII, originalHeads, originalDirection }()
 	useAscii, headStyle = false, heads
@@ -111,6 +116,7 @@ func renderBoxPaddingGraph(t *testing.T, source string, gap, boxX, boxY int, hea
 	}
 	properties.paddingX, properties.paddingY = gap, gap
 	properties.boxPaddingX, properties.boxPaddingY = &boxX, &boxY
+	properties.uniformSpacing = uniform
 	rendered := mkGraph(properties)
 	rendered.setStyleClasses(properties)
 	rendered.setSubgraphs(properties.subgraphs)

@@ -19,6 +19,7 @@ type graphProperties struct {
 	paddingY        int
 	boxPaddingX     *int
 	boxPaddingY     *int
+	uniformSpacing  bool
 	subgraphs       []*textSubgraph
 	nodeDefinitions map[string]nodeDefinition
 }
