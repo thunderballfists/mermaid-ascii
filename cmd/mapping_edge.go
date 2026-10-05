@@ -28,6 +28,9 @@ func (g *graph) determinePath(e *edge) {
 	if !useAscii && g.routeRepeatedEdge(e) {
 		return
 	}
+	if !useAscii && e.from == e.to && e.text != "" {
+		e.separateRoute = true
+	}
 	defer func() {
 		if !useAscii {
 			g.routeRepeatedEdge(e)

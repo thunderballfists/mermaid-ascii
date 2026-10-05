@@ -153,7 +153,7 @@ func TestUniformSpacingSingleNode(t *testing.T) {
 	}
 }
 
-func TestUniformSpacingIncludesExpandedBorderBand(t *testing.T) {
+func TestUniformSpacingWithLabelledSelfLoop(t *testing.T) {
 	_, output := renderLayoutGraph(t, "graph LR\nA-->|loop|A\nA-->B\nB-->C", 1, 0, 0, HeadStylePointer, true)
 	gaps := chainGaps(output, "LR")
 	if len(gaps) != 2 || gaps[0] != gaps[1] {

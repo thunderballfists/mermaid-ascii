@@ -58,6 +58,12 @@ async function render(source, options = {}) {
   });
   assert.equal(branchHeads.type, "result");
   assert.equal((branchHeads.text.match(/[►◄▲▼]/g) || []).length, 4);
+  const loop = await render("graph LR\nA-->|loop|A\nA-->B\nB-->C", {
+    paddingX: 1, paddingY: 1, boxPaddingX: 0, boxPaddingY: 0,
+  });
+  assert.equal(loop.type, "result");
+  assert.ok(loop.text.includes("loop"));
+  assert.equal((loop.text.match(/[►◄▲▼]/g) || []).length, 3);
   const uniform = await render(source, { paddingX: 1, boxPaddingY: 0, uniformSpacing: true });
   assert.equal(uniform.type, "result");
   assert.ok(uniform.text.includes("long_edge_label"));
