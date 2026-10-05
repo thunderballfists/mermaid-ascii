@@ -53,6 +53,20 @@ $ ./result/bin/mermaid-ascii --help
 
 You can render graphs directly from the command line or start a web interface to render them interactively.
 
+Box padding is independent of spacing between nodes. Extended output defaults to
+one cell of box padding on each axis. Opt into compact boxes with no blank rows:
+
+```bash
+printf 'graph LR\nA-->B\n' | ./mermaid-ascii --boxPaddingX 1 --boxPaddingY 0
+```
+
+`--boxPaddingX` and `--boxPaddingY` accept nonnegative cell counts and affect only
+extended output. When omitted, they use the existing `--borderPadding` (`-p`)
+value. `--paddingX`/`--paddingY` (`-x`/`-y`) still control gaps between nodes.
+The Go API exposes nullable `lib.Options.BoxPaddingX` and `BoxPaddingY` fields;
+nil preserves the existing defaults. Routing and shared grid bands may enlarge
+boxes beyond these minimum paddings.
+
 ```bash
 $ cat test.mermaid
 graph LR

@@ -39,6 +39,8 @@ type graph struct {
 	styleType    string
 	paddingX     int
 	paddingY     int
+	boxPaddingX  *int
+	boxPaddingY  *int
 	subgraphs    []*subgraph
 	offsetX      int
 	offsetY      int
@@ -118,6 +120,8 @@ func (g *graph) setStyleClasses(properties *graphProperties) {
 	g.styleType = properties.styleType
 	g.paddingX = properties.paddingX
 	g.paddingY = properties.paddingY
+	g.boxPaddingX = properties.boxPaddingX
+	g.boxPaddingY = properties.boxPaddingY
 	for _, n := range g.nodes {
 		if n.styleClassName != "" {
 			log.Debugf("Setting style class for node %s to %s", n.name, n.styleClassName)

@@ -54,12 +54,21 @@ var rootCmd = &cobra.Command{
 
 		paddingX := paddingBetweenX
 		paddingY := paddingBetweenY
-		if _, err := lib.Render(string(mermaid), lib.Options{
+		options := lib.Options{
 			UseASCII: useAscii,
 			PaddingX: &paddingX,
 			PaddingY: &paddingY,
 			Heads:    headStyleString(headStyle),
-		}); err != nil {
+		}
+		if cmd.Flags().Changed("boxPaddingX") {
+			value, _ := cmd.Flags().GetInt("boxPaddingX")
+			options.BoxPaddingX = &value
+		}
+		if cmd.Flags().Changed("boxPaddingY") {
+			value, _ := cmd.Flags().GetInt("boxPaddingY")
+			options.BoxPaddingY = &value
+		}
+		if _, err := lib.Render(string(mermaid), options); err != nil {
 			log.Fatal("Failed to render mermaid input: ", err)
 		}
 	},
@@ -85,6 +94,8 @@ func init() {
 	rootCmd.PersistentFlags().IntVarP(&paddingBetweenX, "paddingX", "x", paddingBetweenX, "Horizontal space between nodes")
 	rootCmd.PersistentFlags().IntVarP(&paddingBetweenY, "paddingY", "y", paddingBetweenY, "Vertical space between nodes")
 	rootCmd.PersistentFlags().IntVarP(&boxBorderPadding, "borderPadding", "p", boxBorderPadding, "Padding between text and border")
+	rootCmd.Flags().Int("boxPaddingX", boxBorderPadding, "Horizontal box padding (extended characters only)")
+	rootCmd.Flags().Int("boxPaddingY", boxBorderPadding, "Vertical box padding (extended characters only; 0 for compact boxes)")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -94,6 +105,14 @@ func init() {
 }
 
 func renderMermaidWithOptions(mermaid string, opts lib.Options) (string, error) {
+	if !opts.UseASCII {
+		if opts.BoxPaddingX != nil && *opts.BoxPaddingX < 0 {
+			return "", fmt.Errorf("box padding X must be non-negative")
+		}
+		if opts.BoxPaddingY != nil && *opts.BoxPaddingY < 0 {
+			return "", fmt.Errorf("box padding Y must be non-negative")
+		}
+	}
 	originalUseASCII := useAscii
 	originalPaddingX := paddingBetweenX
 	originalPaddingY := paddingBetweenY
@@ -122,6 +141,8 @@ func renderMermaidWithOptions(mermaid string, opts lib.Options) (string, error) 
 	if err != nil {
 		return "", err
 	}
+	properties.boxPaddingX = opts.BoxPaddingX
+	properties.boxPaddingY = opts.BoxPaddingY
 
 	result := drawMap(properties)
 	return result, nil

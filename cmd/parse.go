@@ -17,6 +17,8 @@ type graphProperties struct {
 	styleType       string
 	paddingX        int
 	paddingY        int
+	boxPaddingX     *int
+	boxPaddingY     *int
 	subgraphs       []*textSubgraph
 	nodeDefinitions map[string]nodeDefinition
 }
