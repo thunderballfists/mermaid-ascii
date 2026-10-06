@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -22,6 +23,7 @@ type graphProperties struct {
 	uniformSpacing  bool
 	subgraphs       []*textSubgraph
 	nodeDefinitions map[string]nodeDefinition
+	linkStyles      []linkStyleRule
 }
 
 type textNode struct {
@@ -32,6 +34,7 @@ type textNode struct {
 }
 
 type textEdge struct {
+	sourceIndex   int
 	parent        textNode
 	child         textNode
 	label         string
@@ -44,6 +47,7 @@ type textEdge struct {
 }
 
 type nodeDefinition struct {
+	styleClass    string
 	id            string
 	label         string
 	shape         Shape
@@ -334,6 +338,10 @@ func (gp *graphProperties) parseNode(line string) textNode {
 	}
 
 	def := gp.parseAndStoreNodeDefinition(base)
+	if !useAscii && styleClass != "" {
+		def.styleClass = styleClass
+		gp.nodeDefinitions[def.id] = def
+	}
 	return textNode{id: def.id, label: def.label, shape: def.shape, styleClass: styleClass}
 }
 
@@ -534,6 +542,9 @@ func addNode(node textNode, data *orderedmap.OrderedMap[string, []textEdge]) {
 }
 
 func setData(parent textNode, edge textEdge, data *orderedmap.OrderedMap[string, []textEdge]) {
+	for element := data.Front(); element != nil; element = element.Next() {
+		edge.sourceIndex += len(element.Value)
+	}
 	// Check if the parent is in the map
 	if children, ok := data.Get(parent.id); ok {
 		// If it is, append the child to the list of children
@@ -694,6 +705,26 @@ func mermaidFileToMap(mermaid, styleType string) (*graphProperties, error) {
 	// Iterate over the lines
 	for _, line := range lines {
 		trimmedLine := strings.TrimSpace(line)
+		fields := strings.Fields(trimmedLine)
+		if !useAscii && len(fields) > 0 && fields[0] == "classDef" {
+			if len(fields) < 3 {
+				return &properties, fmt.Errorf("classDef requires a class name and styles")
+			}
+			colors, err := parseColorDeclarations(strings.Join(fields[2:], ""))
+			if err != nil {
+				return &properties, err
+			}
+			styleClasses[fields[1]] = styleClass{name: fields[1], styles: colors}
+			continue
+		}
+		if !useAscii && len(fields) > 0 && fields[0] == "linkStyle" {
+			rule, err := parseLinkStyle(trimmedLine)
+			if err != nil {
+				return &properties, err
+			}
+			properties.linkStyles = append(properties.linkStyles, rule)
+			continue
+		}
 
 		// Check for subgraph start
 		if match := subgraphRegex.FindStringSubmatch(trimmedLine); match != nil {
@@ -766,6 +797,19 @@ func mermaidFileToMap(mermaid, styleType string) (*graphProperties, error) {
 							log.Debugf("Added node %s to subgraph %s", nodeName, sg.name)
 						}
 					}
+				}
+			}
+		}
+	}
+	if !useAscii {
+		edgeCount := 0
+		for element := data.Front(); element != nil; element = element.Next() {
+			edgeCount += len(element.Value)
+		}
+		for _, rule := range properties.linkStyles {
+			for _, index := range rule.indices {
+				if index >= edgeCount {
+					return &properties, fmt.Errorf("linkStyle edge index %d is out of range", index)
 				}
 			}
 		}

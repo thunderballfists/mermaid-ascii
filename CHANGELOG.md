@@ -4,6 +4,9 @@
 
 ### Added
 
+- Extended-mode border and edge colors: `classDef` label/border colors and
+  source-indexed or default `linkStyle` stroke/label colors. Border attachments
+  retain box colors; color composition does not change layout or glyphs.
 - Independent minimum box padding in extended output: `--boxPaddingX` and
   `--boxPaddingY`, defaulting to the existing border padding of one cell.
   Vertical padding of zero removes blank rows in simple boxes.

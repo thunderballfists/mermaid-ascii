@@ -384,6 +384,26 @@ This results in the following graph:
 
 ![](docs/colored_graph.png)
 
+In extended output, `classDef` supports `color` for node labels and `stroke` for
+box borders. `linkStyle` supports `stroke` for edge bodies/heads and `color` for
+edge labels (defaulting to the edge stroke). Use `#rgb` or `#rrggbb` colors:
+
+```mermaid
+graph LR
+classDef box color:#112233,stroke:#00aa66
+A[Start]:::box -->|two words| B[Finish]:::box
+linkStyle 0 stroke:#cc3344,color:#3366cc
+```
+
+Indices are zero-based in source edge order; `linkStyle 0,2 ...` selects multiple
+edges and `linkStyle default ...` applies to all edges. Later declarations
+override the specified properties. Box borders and attachment junctions retain
+their own border color; stems and arrowheads outside the box use the edge color.
+At crossings between edges, the last composed stroke/head owns the cell color.
+Group frames retain the default output color. `fill`, named colors, and general
+CSS styling are not supported. These additions apply only to extended output;
+`linkStyle` remains unsupported by the legacy ASCII parser.
+
 ## How it works
 
 We parse a mermaid file into basic components in order to render a grid. The grid is used for mapping purposes, which is eventually converted to a drawing.

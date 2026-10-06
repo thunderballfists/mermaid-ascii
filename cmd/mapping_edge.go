@@ -7,6 +7,8 @@ import (
 )
 
 type edge struct {
+	sourceIndex   int
+	colors        map[string]string
 	from          *node
 	to            *node
 	text          string

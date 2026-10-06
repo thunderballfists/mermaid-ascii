@@ -233,7 +233,7 @@ func drawBox(n *node, g graph) *drawing {
 	}
 	textX := from.x + w/2 - CeilDiv(labelWidth, 2) + 1
 	if !useAscii {
-		boxDrawing.drawUnicodeText(drawingCoord{textX, textY}, n.label, to.x-textX, n.styleClass.styles["color"], g.styleType)
+		boxDrawing.drawUnicodeText(drawingCoord{textX, textY}, n.label, to.x-textX, normalizeColor(n.styleClass.styles["color"]), g.styleType)
 	} else {
 		for x := 0; x < len(n.label); x++ {
 			boxDrawing[textX+x][textY] = wrapTextInColor(string(n.label[x]), n.styleClass.styles["color"], g.styleType)

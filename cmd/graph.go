@@ -99,15 +99,16 @@ func mkGraph(properties *graphProperties) graph {
 				parentNode.styleClassName = textEdge.parent.styleClass
 			}
 			e := edge{
-				from:      parentNode,
-				to:        childNode,
-				text:      textEdge.label,
-				nearHead:  textEdge.labelNearHead,
-				edgeStyle: textEdge.edgeStyle,
-				arrowDir:  textEdge.arrowDir,
-				leftCap:   textEdge.leftCap,
-				rightCap:  textEdge.rightCap,
-				lenHint:   textEdge.lenHint,
+				sourceIndex: textEdge.sourceIndex,
+				from:        parentNode,
+				to:          childNode,
+				text:        textEdge.label,
+				nearHead:    textEdge.labelNearHead,
+				edgeStyle:   textEdge.edgeStyle,
+				arrowDir:    textEdge.arrowDir,
+				leftCap:     textEdge.leftCap,
+				rightCap:    textEdge.rightCap,
+				lenHint:     textEdge.lenHint,
 			}
 			g.edges = append(g.edges, &e)
 		}
@@ -124,7 +125,28 @@ func (g *graph) setStyleClasses(properties *graphProperties) {
 	g.boxPaddingX = properties.boxPaddingX
 	g.boxPaddingY = properties.boxPaddingY
 	g.uniformSpacing = properties.uniformSpacing
+	if !useAscii {
+		for _, connection := range g.edges {
+			connection.colors = make(map[string]string)
+			for _, rule := range properties.linkStyles {
+				applies := len(rule.indices) == 0
+				for _, index := range rule.indices {
+					applies = applies || index == connection.sourceIndex
+				}
+				if applies {
+					for name, value := range rule.colors {
+						connection.colors[name] = value
+					}
+				}
+			}
+		}
+	}
 	for _, n := range g.nodes {
+		if !useAscii {
+			if definition := properties.getOrCreateNodeDefinition(n.name); definition.styleClass != "" {
+				n.styleClassName = definition.styleClass
+			}
+		}
 		if n.styleClassName != "" {
 			log.Debugf("Setting style class for node %s to %s", n.name, n.styleClassName)
 			(*n).styleClass = g.styleClasses[n.styleClassName]
@@ -624,6 +646,9 @@ func (g *graph) draw() *drawing {
 
 	// Draw subgraph labels LAST so they don't get overwritten by arrows
 	g.drawSubgraphLabels()
+	if !useAscii {
+		g.colorizeDrawing(lineDrawings, cornerDrawings, arrowHeadDrawings, labelDrawings)
+	}
 
 	return g.drawing
 }
