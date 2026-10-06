@@ -5,7 +5,8 @@ Render mermaid diagrams in your terminal.
 Extended output supports display-cell-aware Unicode labels, nested subgraphs,
 separate routes for repeated edges, and opt-in compact boxes and uniform gaps.
 Recent repairs preserve arrowheads, border attachments, junctions, and spaces in
-edge labels. ASCII output retains its existing behavior.
+edge labels. Double edges (`==>`, `===`) use mixed single/double junctions at
+thin box borders, such as `╞════►`. ASCII output retains its existing behavior.
 
 See the [changelog](CHANGELOG.md) for unreleased changes and the
 [renderer audit](automation/render-audit.md) for tested cases and limitations.

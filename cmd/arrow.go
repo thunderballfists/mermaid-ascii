@@ -226,6 +226,10 @@ func (g *graph) drawBoxStart(e *edge, firstLine []drawingCoord) *drawing {
 	}
 
 	pal := buildPalette(e.flowOptions())
+	if e.edgeStyle == StyleThick {
+		pal.TeeLeft, pal.TeeRight = "╞", "╡"
+		pal.TeeUp, pal.TeeDown = "╥", "╨"
+	}
 	switch dir {
 	case Up:
 		d[from.x][from.y+1] = pal.TeeDown

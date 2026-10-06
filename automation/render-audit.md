@@ -287,6 +287,16 @@ The existing single-class model is retained; later explicit assignments replace
 the previous class. Legacy ASCII parsing remains unchanged. Worker checks compare
 separate and inline classes and execute the updated colored demo example.
 
+## Mixed box attachments (2026-10-06)
+
+Double edges now use `╞`, `╡`, `╥`, and `╨` when leaving thin box borders.
+Only the edge axis is double; corners and intersections along double routes
+retain their existing weights. Regression tests cover all four attachment
+directions, LR/TD output with compact/default boxes and all head styles, and
+mixed single/double junction composition. The worker smoke checks the exact
+compact LR output, the TD attachment, and box/edge color ownership. Three
+attachment characters in the Unicode snapshots changed; ASCII goldens did not.
+
 ## Earlier validation (2026-10-03)
 
 `go test ./... -count=1`, `go vet ./...`, standard-Go WASM builds, and TinyGo 0.39.0

@@ -68,6 +68,16 @@ async function render(source, options = {}) {
   assert.equal(spacedLabel.type, "result");
   assert.ok(spacedLabel.text.includes("Café 東京 returns"));
   assert.equal((spacedLabel.text.match(/[►◄▲▼]/g) || []).length, 1);
+  const doubleEdge = await render("graph LR\nA==>B", { boxPaddingY: 0 });
+  assert.equal(doubleEdge.type, "result");
+  assert.equal(doubleEdge.text, "┌───┐     ┌───┐\n│ A ╞════►│ B │\n└───┘     └───┘");
+  const verticalDoubleEdge = await render("graph TD\nA==>B", { boxPaddingY: 0 });
+  assert.equal(verticalDoubleEdge.type, "result");
+  assert.ok(verticalDoubleEdge.text.includes("└─╥─┘"));
+  const coloredDoubleEdge = await render("graph LR\nclassDef box stroke:#00ff00\nA:::box ==> B\nlinkStyle 0 stroke:#ff0000", { colorMode: "always", boxPaddingY: 0 });
+  assert.equal(coloredDoubleEdge.type, "result");
+  assert.ok(coloredDoubleEdge.text.includes("\x1b[38;2;0;255;0m╞\x1b[0m"));
+  assert.ok(coloredDoubleEdge.text.includes("\x1b[38;2;255;0;0m═\x1b[0m"));
   const uniform = await render(source, { paddingX: 1, boxPaddingY: 0, uniformSpacing: true });
   assert.equal(uniform.type, "result");
   assert.ok(uniform.text.includes("long_edge_label"));

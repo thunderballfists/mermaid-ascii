@@ -26,6 +26,8 @@
 
 All renderer repairs below apply to extended/Unicode output only.
 
+- Join double edges to thin box borders with mixed single/double glyphs
+  (`╞`, `╡`, `╥`, `╨`) instead of making the border double at the attachment.
 - Recognize separate `class A,B name` assignments instead of rendering them as
   extra nodes. Assignments retain labels and apply the same colors as inline
   classes, including forward references, standalone nodes, and nested groups.
