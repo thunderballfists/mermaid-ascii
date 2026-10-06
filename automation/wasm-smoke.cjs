@@ -89,6 +89,10 @@ async function render(source, options = {}) {
   const plainColor = await render(colorSource, { colorMode: "never", boxPaddingY: 0 });
   assert.equal(plainColor.type, "result");
   assert.equal(colored.text.replace(/\x1b\[[0-9;]*m/g, ""), plainColor.text);
+  const separateClassSource = "graph LR\nclassDef box color:#112233,stroke:#00ff00\nA[東京] -->|two words| B\nclass A, B box;\nlinkStyle 0 stroke:#ff0000,color:#0000ff";
+  const classAssigned = await render(separateClassSource, { colorMode: "always", boxPaddingY: 0 });
+  assert.equal(classAssigned.type, "result");
+  assert.equal(classAssigned.text, colored.text);
   const invalidColor = await render("graph LR\nA", { colorMode: "invalid" });
   assert.equal(invalidColor.type, "error");
   assert.match(invalidColor.error, /color mode/);

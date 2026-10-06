@@ -278,6 +278,15 @@ worker checks pass locally, including the actual colored example. The local demo
 serves the updated files on port 5174. Interactive inspection remains unverified:
 the in-app browser is unavailable and the connected-browser inventory is empty.
 
+The separate `class A,B name` syntax now resolves through the same stored node
+metadata as inline `:::name`. It no longer creates a spurious node. Regression
+tests compare exact styled output and node/edge counts in LR/TD for assignments
+before/after edges, standalone nodes, Unicode labels, nested groups, whitespace,
+semicolons, and absent node references. Malformed assignments produce errors.
+The existing single-class model is retained; later explicit assignments replace
+the previous class. Legacy ASCII parsing remains unchanged. Worker checks compare
+separate and inline classes and execute the updated colored demo example.
+
 ## Earlier validation (2026-10-03)
 
 `go test ./... -count=1`, `go vet ./...`, standard-Go WASM builds, and TinyGo 0.39.0
