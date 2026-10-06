@@ -63,6 +63,7 @@ type textSubgraph struct {
 }
 
 var nodeWithClassPattern = regexp.MustCompile(`^(.+):::(.+)$`)
+var classAssignmentPattern = regexp.MustCompile(`^class\s+([^\s,;]+(?:\s*,\s*[^\s,;]+)*)\s+([^\s,;]+)\s*;?\s*$`)
 
 var edgeOperatorPattern = `<?[ox)]?[-.=]+(?:[ox)]?[-.=]+)*[ox)]?>?`
 
@@ -706,6 +707,19 @@ func mermaidFileToMap(mermaid, styleType string) (*graphProperties, error) {
 	for _, line := range lines {
 		trimmedLine := strings.TrimSpace(line)
 		fields := strings.Fields(trimmedLine)
+		if !useAscii && len(fields) > 0 && fields[0] == "class" {
+			match := classAssignmentPattern.FindStringSubmatch(trimmedLine)
+			if match == nil {
+				return &properties, fmt.Errorf("class requires nonempty node IDs and one class name")
+			}
+			for _, identifier := range strings.Split(match[1], ",") {
+				identifier = strings.TrimSpace(identifier)
+				definition := properties.getOrCreateNodeDefinition(identifier)
+				definition.styleClass = match[2]
+				properties.nodeDefinitions[identifier] = definition
+			}
+			continue
+		}
 		if !useAscii && len(fields) > 0 && fields[0] == "classDef" {
 			if len(fields) < 3 {
 				return &properties, fmt.Errorf("classDef requires a class name and styles")

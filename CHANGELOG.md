@@ -26,6 +26,9 @@
 
 All renderer repairs below apply to extended/Unicode output only.
 
+- Recognize separate `class A,B name` assignments instead of rendering them as
+  extra nodes. Assignments retain labels and apply the same colors as inline
+  classes, including forward references, standalone nodes, and nested groups.
 - Measure and draw Unicode labels by terminal display cells, preserving CJK,
   combining marks, and emoji (Fix 1).
 - Compose junctions from connectivity and reserve label/arrowhead clearance

@@ -396,6 +396,12 @@ A[Start]:::box -->|two words| B[Finish]:::box
 linkStyle 0 stroke:#cc3344,color:#3366cc
 ```
 
+You can also assign a class separately with `class A,B box;`. Assignments may
+appear before or after node declarations and support whitespace around commas.
+The renderer keeps one class per node; a later explicit assignment replaces its
+previous class. Referring to an undeclared node does not create a node. Both
+inline `:::box` and separate assignments use the same label/border styles.
+
 Indices are zero-based in source edge order; `linkStyle 0,2 ...` selects multiple
 edges and `linkStyle default ...` applies to all edges. Later declarations
 override the specified properties. Box borders and attachment junctions retain
@@ -403,7 +409,8 @@ their own border color; stems and arrowheads outside the box use the edge color.
 At crossings between edges, the last composed stroke/head owns the cell color.
 Group frames retain the default output color. `fill`, named colors, and general
 CSS styling are not supported. These additions apply only to extended output;
-`linkStyle` remains unsupported by the legacy ASCII parser.
+`linkStyle` and separate `class` assignments remain unsupported by the legacy
+ASCII parser.
 
 The CLI uses terminal color detection by default. Use `--color always` to emit
 truecolor ANSI escapes even when redirecting output, or `--color never` for plain
