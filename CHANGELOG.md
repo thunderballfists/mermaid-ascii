@@ -26,6 +26,8 @@
 
 All renderer repairs below apply to extended/Unicode output only.
 
+- Preserve rounded/circular node labels and shapes beside unspaced edges;
+  their closing `)` is no longer consumed as an edge end cap.
 - Join double edges to thin box borders with mixed single/double glyphs
   (`╞`, `╡`, `╥`, `╨`) instead of making the border double at the attachment.
 - Recognize separate `class A,B name` assignments instead of rendering them as

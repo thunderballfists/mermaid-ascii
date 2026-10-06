@@ -64,6 +64,11 @@ async function render(source, options = {}) {
   assert.equal(loop.type, "result");
   assert.ok(loop.text.includes("loop"));
   assert.equal((loop.text.match(/[►◄▲▼]/g) || []).length, 3);
+  const shapedLoop = await render("graph LR\nA(Start)-->|loop|A", { boxPaddingY: 0 });
+  assert.equal(shapedLoop.type, "result");
+  assert.ok(shapedLoop.text.includes("Start"));
+  assert.ok(shapedLoop.text.includes("loop"));
+  assert.equal((shapedLoop.text.match(/[►◄▲▼]/g) || []).length, 1);
   const spacedLabel = await render("graph LR\nA-->|Café 東京 returns|B", { boxPaddingY: 0 });
   assert.equal(spacedLabel.type, "result");
   assert.ok(spacedLabel.text.includes("Café 東京 returns"));

@@ -209,6 +209,13 @@ func buildEdgeSpec(lhs, rhs, operator, label string, nearHead bool) edgeSpec {
 	lhs = strings.TrimSpace(lhs)
 	rhs = strings.TrimSpace(rhs)
 	operator = strings.TrimSpace(operator)
+	if !useAscii && strings.HasPrefix(operator, ")") {
+		_, remainder := splitNodeIdentifier(lhs)
+		if _, _, rest, ok := parseShapeAndLabel(remainder + ")"); ok && rest == "" {
+			lhs += ")"
+			operator = operator[1:]
+		}
+	}
 	style, direction, leftCap, rightCap, lenHint := classifyEdgeOperator(operator)
 	return edgeSpec{
 		lhs:       lhs,
