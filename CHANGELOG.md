@@ -8,6 +8,9 @@
   padding, color ownership, and arrow routing preserved.
 - Subroutine nodes (`A[[label]]`) with inset borders, label padding independent
   of those borders, and matching border colors.
+- Stadium nodes (`A([label])`) with rounded corners and parenthesized end caps,
+  distinct from rounded rectangles without increasing their minimum height.
+- A demo example combining stadium, subroutine, and rounded nodes.
 - Extended-mode border and edge colors: `classDef` label/border colors and
   source-indexed or default `linkStyle` stroke/label colors. Border attachments
   retain box colors; color composition does not change layout or glyphs.

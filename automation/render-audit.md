@@ -297,6 +297,23 @@ mixed single/double junction composition. The worker smoke checks the exact
 compact LR output, the TD attachment, and box/edge color ownership. Three
 attachment characters in the Unicode snapshots changed; ASCII goldens did not.
 
+## First native node shapes (2026-10-06)
+
+Extended output now draws rounded rectangles (`A(label)`), stadiums
+(`A([label])`), and subroutines (`A[[label]]`). Stadiums use parenthesized end
+caps as a compact text approximation; they have a distinct shape type.
+Subroutine dividers reserve four columns independently of label padding and
+share the node border color. These shapes keep rectangular bounds and cardinal
+ports; other shapes still render as rectangles. Modern `@{ shape: ... }`
+declarations are not supported yet.
+
+A preceding parser repair preserves closing `)` delimiters next to unspaced
+edges without consuming them as end caps. Explicit end caps remain supported.
+Exact output tests cover compact/default padding and Unicode labels. Route
+matrices cover LR/TD, all head styles, loops, parallel edges, and groups; a
+mixed-shape case also checks uniform spacing. Worker checks render each shape
+and the actual demo example. ASCII parsing/rendering and goldens are unchanged.
+
 ## Earlier validation (2026-10-03)
 
 `go test ./... -count=1`, `go vet ./...`, standard-Go WASM builds, and TinyGo 0.39.0

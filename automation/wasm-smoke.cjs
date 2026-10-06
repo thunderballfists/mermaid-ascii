@@ -42,6 +42,7 @@ async function render(source, options = {}) {
   assert.equal((await render("graph LR\nA", { boxPaddingY: 0 })).text, "┌───┐\n│ A │\n└───┘");
   assert.equal((await render("graph LR\nA(Start)", { boxPaddingY: 0 })).text, "╭───────╮\n│ Start │\n╰───────╯");
   assert.equal((await render("graph LR\nA[[Run]]", { boxPaddingY: 0 })).text, "┌─┬─────┬─┐\n│ │ Run │ │\n└─┴─────┴─┘");
+  assert.equal((await render("graph LR\nA([Start])", { boxPaddingY: 0 })).text, "╭───────╮\n( Start )\n╰───────╯");
   assert.equal((await render("graph LR\nA", { boxPaddingX: 0, boxPaddingY: 0 })).text, "┌─┐\n│A│\n└─┘");
   assert.equal((await render("graph LR\nA[東京]", { boxPaddingX: 0, boxPaddingY: 0 })).text, "┌────┐\n│東京│\n└────┘");
   assert.equal((await render("graph LR\nA", { boxPaddingX: 3, boxPaddingY: 0 })).text, "┌───────┐\n│   A   │\n└───────┘");
@@ -117,6 +118,14 @@ async function render(source, options = {}) {
   const examplesContext = { window: {} };
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../site/examples.js"), "utf8"), examplesContext);
   const colorExample = examplesContext.window.MERMAID_ASCII_EXAMPLES.find(example => example.id === "colored-flow");
+  const shapeExample = examplesContext.window.MERMAID_ASCII_EXAMPLES.find(example => example.id === "node-shapes");
+  assert.ok(shapeExample);
+  const shapeResult = await render(shapeExample.mermaid, { boxPaddingY: 0, colorMode: "never" });
+  assert.equal(shapeResult.type, "result");
+  assert.ok(shapeResult.text.includes("( Start ├"));
+  assert.ok(shapeResult.text.includes("│ │ Run │ ├"));
+  assert.ok(shapeResult.text.includes("│ Done │"));
+  assert.equal((shapeResult.text.match(/►/g) || []).length, 2);
   assert.ok(colorExample);
   const exampleResult = await render(colorExample.mermaid, { colorMode: "always", boxPaddingY: 0 });
   assert.equal(exampleResult.type, "result");

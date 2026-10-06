@@ -329,7 +329,7 @@ var shapeDelimiters = []shapeDelimiter{
 	{open: "[/", close: "/]", shape: ShapeParallelogramRight},
 	{open: "[\\", close: "\\]", shape: ShapeParallelogramLeft},
 	{open: "[<", close: "]", shape: ShapeTrapezoidLeft},
-	{open: "([", close: "])", shape: ShapeRoundedRectangle},
+	{open: "([", close: "])", shape: ShapeStadium},
 	{open: "(", close: ")", shape: ShapeRoundedRectangle},
 	{open: ">", close: "]", shape: ShapeTrapezoidRight},
 	{open: "{", close: "}", shape: ShapeDiamond},
@@ -435,12 +435,16 @@ func parseShapeAndLabel(remainder string) (Shape, string, string, bool) {
 	trimmed := strings.TrimSpace(remainder)
 	for _, spec := range shapeDelimiters {
 		if strings.HasPrefix(trimmed, spec.open) {
+			shape := spec.shape
+			if useAscii && shape == ShapeStadium {
+				shape = ShapeRoundedRectangle
+			}
 			content := trimmed[len(spec.open):]
 			raw, rest, ok := extractLabel(content, spec.close)
 			if !ok {
-				return spec.shape, "", "", false
+				return shape, "", "", false
 			}
-			return spec.shape, raw, rest, true
+			return shape, raw, rest, true
 		}
 	}
 	return defaultShape(), "", "", false

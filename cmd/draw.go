@@ -181,7 +181,7 @@ func drawBox(n *node, g graph) *drawing {
 	log.Debug("Drawing box from ", from, " to ", to)
 	if !useAscii {
 		opts := defaultFlowOptions()
-		opts.CurvedCorners = n.shape == ShapeRoundedRectangle
+		opts.CurvedCorners = n.shape == ShapeRoundedRectangle || n.shape == ShapeStadium
 		pal := buildPalette(opts)
 		// Draw top border
 		for x := from.x + 1; x < to.x; x++ {

@@ -1,7 +1,12 @@
 package cmd
 
 func (n *node) drawShapeBorders(d *drawing, width, height int) {
-	if n.shape == ShapeSubroutine {
+	switch n.shape {
+	case ShapeStadium:
+		for row := 1; row < height; row++ {
+			(*d)[0][row], (*d)[width][row] = "(", ")"
+		}
+	case ShapeSubroutine:
 		for _, column := range []int{2, width - 2} {
 			(*d)[column][0], (*d)[column][height] = "┬", "┴"
 			for row := 1; row < height; row++ {

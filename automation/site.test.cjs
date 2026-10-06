@@ -179,10 +179,10 @@ test("a mode toggle keeps the pending response's color mode until the next dispa
   assert.equal(app.elements.get("render-output").textContent, "ASCII");
 });
 
-test("the colored demo example dispatches its actual source in extended mode", async () => {
+for (const exampleId of ["colored-flow", "node-shapes"]) test(`${exampleId} dispatches its actual source in extended mode`, async () => {
   const app = loadApp("?ext=1");
   await app.settle();
-  const index = app.window.MERMAID_ASCII_EXAMPLES.findIndex(example => example.id === "colored-flow");
+  const index = app.window.MERMAID_ASCII_EXAMPLES.findIndex(example => example.id === exampleId);
   assert.ok(index >= 0);
   app.elements.get("example-select").value = String(index);
   app.elements.get("example-select").emit("change");

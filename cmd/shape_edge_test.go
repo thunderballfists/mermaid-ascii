@@ -12,7 +12,7 @@ func TestUnicodeShapeClosingDelimiterAtEdge(t *testing.T) {
 	}{
 		{"A(Start)-->B", ShapeRoundedRectangle},
 		{"A(Start)-->|label|B", ShapeRoundedRectangle},
-		{"A([Start])-->|loop|A", ShapeRoundedRectangle},
+		{"A([Start])-->|loop|A", ShapeStadium},
 		{"A((Start))==>B", ShapeCircle},
 		{"A(((Start)))-->B", ShapeDoubleCircle},
 	} {

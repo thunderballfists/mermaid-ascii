@@ -1,5 +1,10 @@
 window.MERMAID_ASCII_EXAMPLES = [
   {
+    id: "node-shapes",
+    name: "Node Shapes (extended mode)",
+    mermaid: "graph LR\nStart([Start]) --> Run[[Run]] --> Finish(Done)",
+  },
+  {
     id: "colored-flow",
     name: "Colored Flow (extended mode)",
     mermaid: "graph LR\nclassDef box color:#3366cc,stroke:#00aa66\nA[Start] -->|two words| B[Finish]\nclass A,B box\nlinkStyle 0 stroke:#cc3344,color:#9966cc",

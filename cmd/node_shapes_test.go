@@ -77,3 +77,19 @@ func TestASCIIShapeRenderingPreserved(t *testing.T) {
 		}
 	}
 }
+
+func TestNativeShapeUniformSpacing(t *testing.T) {
+	for _, direction := range []string{"LR", "TD"} {
+		for _, boxX := range []int{0, 1} {
+			t.Run(fmt.Sprintf("%s/boxX=%d", direction, boxX), func(t *testing.T) {
+				source := "graph " + direction + "\nA([Start])-->|a long label|B[[Run]]\nB-->C(Done)"
+				rendered, output := renderLayoutGraph(t, source, 1, boxX, 0, HeadStylePointer, true)
+				if defects := auditRenderDefects(rendered, output, nil, false, HeadStylePointer); len(defects) != 0 {
+					t.Fatalf("native shapes lost information: %v\n%s", defects, output)
+				}
+				assertNodeInteriors(t, rendered, output)
+				assertUniformNodeGaps(t, rendered, output)
+			})
+		}
+	}
+}
