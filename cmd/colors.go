@@ -116,7 +116,7 @@ func (g *graph) colorizeDrawing(lines, corners, heads, labels []*drawing) {
 			for y := 0; y <= height; y++ {
 				position := drawingCoord{contentNode.drawingCoord.x + x, contentNode.drawingCoord.y + y}
 				delete(colors, position)
-				if x == 0 || x == width || y == 0 || y == height {
+				if contentNode.isBorderCell(x, y, width, height) {
 					colors[position] = borderColor
 				}
 			}

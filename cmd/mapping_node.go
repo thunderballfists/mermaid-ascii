@@ -50,6 +50,9 @@ func (g *graph) setColumnWidth(n *node) {
 	col2 := 2*boxPaddingX + textWidth(n.label)
 	if !useAscii {
 		col2 = Max(1, col2)
+		if n.shape == ShapeSubroutine {
+			col2 += 4
+		}
 	}
 	col3 := 1
 	colsToBePlaced := []int{col1, col2, col3}

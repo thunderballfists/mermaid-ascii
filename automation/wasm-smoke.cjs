@@ -41,6 +41,7 @@ async function render(source, options = {}) {
   assert.equal((await render("graph LR\nA")).text, defaultBox);
   assert.equal((await render("graph LR\nA", { boxPaddingY: 0 })).text, "┌───┐\n│ A │\n└───┘");
   assert.equal((await render("graph LR\nA(Start)", { boxPaddingY: 0 })).text, "╭───────╮\n│ Start │\n╰───────╯");
+  assert.equal((await render("graph LR\nA[[Run]]", { boxPaddingY: 0 })).text, "┌─┬─────┬─┐\n│ │ Run │ │\n└─┴─────┴─┘");
   assert.equal((await render("graph LR\nA", { boxPaddingX: 0, boxPaddingY: 0 })).text, "┌─┐\n│A│\n└─┘");
   assert.equal((await render("graph LR\nA[東京]", { boxPaddingX: 0, boxPaddingY: 0 })).text, "┌────┐\n│東京│\n└────┘");
   assert.equal((await render("graph LR\nA", { boxPaddingX: 3, boxPaddingY: 0 })).text, "┌───────┐\n│   A   │\n└───────┘");

@@ -204,6 +204,7 @@ func drawBox(n *node, g graph) *drawing {
 		boxDrawing[to.x][from.y] = pal.CornerTopRight
 		boxDrawing[from.x][to.y] = pal.CornerBottomLeft
 		boxDrawing[to.x][to.y] = pal.CornerBottomRight
+		n.drawShapeBorders(&boxDrawing, w, h)
 	} else {
 		// Draw top border
 		for x := from.x + 1; x < to.x; x++ {

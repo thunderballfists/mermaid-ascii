@@ -32,6 +32,8 @@ Run Go unit tests with `go test ./...` and demo control tests with
 
 Rounded nodes such as `A(Start)` render with `╭ ╮ ╰ ╯` corners in extended
 output, preserving the same padding and arrow attachment rules as rectangles.
+Subroutines such as `A[[Run]]` add inset vertical borders; padding applies to
+the label area between those borders, and `stroke` colors the complete frame.
 
 ## Installation
 
