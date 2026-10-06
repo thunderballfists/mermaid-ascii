@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/gookit/color"
@@ -348,6 +349,17 @@ func drawSubgraphLabel(sg *subgraph, g graph) (*drawing, drawingCoord) {
 func wrapTextInColor(text, c, styleType string) string {
 	if c == "" {
 		return text
+	}
+	if styleType == "plain" {
+		return text
+	}
+	if styleType == "ansi" {
+		hex := normalizeColor(c)
+		if hex == "" {
+			return text
+		}
+		value, _ := strconv.ParseUint(hex[1:], 16, 24)
+		return fmt.Sprintf("\x1b[38;2;%d;%d;%dm%s\x1b[0m", value>>16, (value>>8)&255, value&255, text)
 	}
 	if styleType == "html" {
 		return fmt.Sprintf("<span style='color: %s'>%s</span>", c, text)

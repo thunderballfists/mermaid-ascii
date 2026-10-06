@@ -15,6 +15,7 @@ type wasmOptions struct {
 	BoxPaddingY    *int   `json:"boxPaddingY"`
 	UniformSpacing bool   `json:"uniformSpacing"`
 	Heads          string `json:"heads"`
+	ColorMode      string `json:"colorMode"`
 }
 
 func decodeOptions(optsJSON string) (lib.Options, error) {
@@ -35,5 +36,6 @@ func decodeOptions(optsJSON string) (lib.Options, error) {
 		BoxPaddingY:    intermediate.BoxPaddingY,
 		UniformSpacing: intermediate.UniformSpacing,
 		Heads:          intermediate.Heads,
+		ColorMode:      intermediate.ColorMode,
 	}, nil
 }

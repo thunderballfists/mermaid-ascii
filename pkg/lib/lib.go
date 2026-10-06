@@ -15,6 +15,7 @@ type Options struct {
 	BoxPaddingY    *int
 	UniformSpacing bool
 	Heads          string
+	ColorMode      string
 }
 
 // Renderer produces a textual representation of a Mermaid diagram.

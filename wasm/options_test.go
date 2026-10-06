@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 )
 
@@ -60,6 +61,17 @@ func TestDecodeOptionsHeadsVariants(t *testing.T) {
 	}
 	if opts.Heads != "none" {
 		t.Fatalf("expected heads to be none, got %q", opts.Heads)
+	}
+}
+
+func TestDecodeOptionsColorMode(t *testing.T) {
+	opts, err := decodeOptions(`{"colorMode":"always"}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded, err := json.Marshal(opts)
+	if err != nil || !strings.Contains(string(encoded), `"ColorMode":"always"`) {
+		t.Fatalf("color mode lost: %s, %v", encoded, err)
 	}
 }
 

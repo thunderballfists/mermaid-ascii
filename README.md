@@ -289,6 +289,7 @@ Flags:
   -p, --borderPadding int   Padding between text and border (default 1)
       --boxPaddingX int     Horizontal box padding (extended characters only) (default 1)
       --boxPaddingY int     Vertical box padding (extended characters only; 0 for compact boxes) (default 1)
+      --color string        Color output: auto, always, never (extended characters only) (default "auto")
   -c, --coords              Show coordinates
   -f, --file string         Mermaid file to parse (use '-' for stdin)
   -h, --help                help for mermaid-ascii
@@ -403,6 +404,12 @@ At crossings between edges, the last composed stroke/head owns the cell color.
 Group frames retain the default output color. `fill`, named colors, and general
 CSS styling are not supported. These additions apply only to extended output;
 `linkStyle` remains unsupported by the legacy ASCII parser.
+
+The CLI uses terminal color detection by default. Use `--color always` to emit
+truecolor ANSI escapes even when redirecting output, or `--color never` for plain
+text. The Go API uses `lib.Options.ColorMode` and WASM uses `colorMode`, each
+accepting `auto`, `always`, or `never`. These modes affect extended output only;
+ASCII retains its existing color behavior.
 
 ## How it works
 

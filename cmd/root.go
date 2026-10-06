@@ -69,6 +69,7 @@ var rootCmd = &cobra.Command{
 			options.BoxPaddingY = &value
 		}
 		options.UniformSpacing, _ = cmd.Flags().GetBool("uniformSpacing")
+		options.ColorMode, _ = cmd.Flags().GetString("color")
 		if _, err := lib.Render(string(mermaid), options); err != nil {
 			log.Fatal("Failed to render mermaid input: ", err)
 		}
@@ -98,6 +99,7 @@ func init() {
 	rootCmd.Flags().Int("boxPaddingX", boxBorderPadding, "Horizontal box padding (extended characters only)")
 	rootCmd.Flags().Int("boxPaddingY", boxBorderPadding, "Vertical box padding (extended characters only; 0 for compact boxes)")
 	rootCmd.Flags().Bool("uniformSpacing", false, "Equal gaps between node bands on each axis (extended characters only)")
+	rootCmd.Flags().String("color", "auto", "Color output: auto, always, never (extended characters only)")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -139,7 +141,19 @@ func renderMermaidWithOptions(mermaid string, opts lib.Options) (string, error) 
 	}
 	headStyle = nextHeadStyle
 
-	properties, err := mermaidFileToMap(mermaid, "cli")
+	styleType := "cli"
+	if !opts.UseASCII {
+		switch strings.ToLower(strings.TrimSpace(opts.ColorMode)) {
+		case "", "auto":
+		case "always":
+			styleType = "ansi"
+		case "never":
+			styleType = "plain"
+		default:
+			return "", fmt.Errorf("unknown color mode %q", opts.ColorMode)
+		}
+	}
+	properties, err := mermaidFileToMap(mermaid, styleType)
 	if err != nil {
 		return "", err
 	}
