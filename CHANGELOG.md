@@ -10,6 +10,8 @@
 - Explicit extended-output color modes (`auto`, `always`, `never`) in the CLI,
   Go API, and WASM options. Forced ANSI output works independently of terminal
   detection, and plain output preserves the same character grid.
+- Colored WASM demo output with safe text spans and a colored example. Copy and
+  download retain plain diagram text.
 - Independent minimum box padding in extended output: `--boxPaddingX` and
   `--boxPaddingY`, defaulting to the existing border padding of one cell.
   Vertical padding of zero removes blank rows in simple boxes.

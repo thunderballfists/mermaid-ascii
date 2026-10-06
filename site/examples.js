@@ -1,5 +1,10 @@
 window.MERMAID_ASCII_EXAMPLES = [
   {
+    id: "colored-flow",
+    name: "Colored Flow (extended mode)",
+    mermaid: "graph LR\nclassDef box color:#3366cc,stroke:#00aa66\nA[Start]:::box -->|two words| B[Finish]:::box\nlinkStyle 0 stroke:#cc3344,color:#9966cc",
+  },
+  {
     id: "simple-flow",
     name: "Simple Flow",
     mermaid: "graph LR\nA[Start] --> B[Do thing]\nB --> C{Decision}\nC -->|Yes| D[Celebrate]\nC -->|No| E[Retry]",

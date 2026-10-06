@@ -411,6 +411,10 @@ text. The Go API uses `lib.Options.ColorMode` and WASM uses `colorMode`, each
 accepting `auto`, `always`, or `never`. These modes affect extended output only;
 ASCII retains its existing color behavior.
 
+The WASM demo displays these colors in extended mode using safe text spans.
+Choose **Colored Flow (extended mode)** and enable extended characters to try
+it. Copy and download keep the plain diagram text without ANSI escapes or HTML.
+
 ## How it works
 
 We parse a mermaid file into basic components in order to render a grid. The grid is used for mapping purposes, which is eventually converted to a drawing.

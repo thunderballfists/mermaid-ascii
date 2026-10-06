@@ -93,6 +93,15 @@ async function render(source, options = {}) {
   assert.equal(invalidColor.type, "error");
   assert.match(invalidColor.error, /color mode/);
   assert.equal((await render(source, { useAscii: true, colorMode: "always" })).text, ascii.text);
+  const examplesContext = { window: {} };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../site/examples.js"), "utf8"), examplesContext);
+  const colorExample = examplesContext.window.MERMAID_ASCII_EXAMPLES.find(example => example.id === "colored-flow");
+  assert.ok(colorExample);
+  const exampleResult = await render(colorExample.mermaid, { colorMode: "always", boxPaddingY: 0 });
+  assert.equal(exampleResult.type, "result");
+  assert.ok(exampleResult.text.includes("\x1b[38;2;0;170;102m├\x1b[0m"));
+  assert.ok(exampleResult.text.includes("\x1b[38;2;204;51;68m►\x1b[0m"));
+  assert.ok(exampleResult.text.includes("\x1b[38;2;153;102;204mt\x1b[0m"));
   clearTimeout(timeout);
   log("Built WASM and worker: defaults, compact boxes, Unicode text, colors, validation, uniform gaps, ASCII invariance passed");
   process.exit(0);

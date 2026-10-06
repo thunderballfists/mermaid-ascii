@@ -35,6 +35,7 @@
     go: null,
     ready: false,
     lastDispatchId: 0,
+    lastDispatchExtended: false,
   };
 
   let debounceTimer = null;
@@ -65,8 +66,42 @@
     }
   }
 
-  function updateOutput(text, isError) {
-    elements.output.textContent = text || "";
+  function updateOutput(text, isError, useExtended = false) {
+    if (!isError && useExtended && text && text.includes("\x1b[")) {
+      const fragment = document.createDocumentFragment();
+      const controls = /\x1b\[(?:38;2;(\d{1,3});(\d{1,3});(\d{1,3})|0)m/g;
+      let position = 0;
+      let color = "";
+      function appendText(value) {
+        if (!value) return;
+        if (color) {
+          const span = document.createElement("span");
+          span.style.color = color;
+          span.textContent = value;
+          fragment.appendChild(span);
+        } else {
+          fragment.appendChild(document.createTextNode(value));
+        }
+      }
+      for (const match of text.matchAll(controls)) {
+        appendText(text.slice(position, match.index));
+        if (match[1] === undefined) {
+          color = "";
+        } else {
+          const rgb = match.slice(1).map(Number);
+          if (rgb.every(value => value <= 255)) {
+            color = `rgb(${rgb.join(", ")})`;
+          } else {
+            appendText(match[0]);
+          }
+        }
+        position = match.index + match[0].length;
+      }
+      appendText(text.slice(position));
+      elements.output.replaceChildren(fragment);
+    } else {
+      elements.output.textContent = text || "";
+    }
     elements.output.classList.toggle("output--error", Boolean(isError));
     const hasText = Boolean(text) && !isError;
     elements.copyBtn.disabled = !hasText;
@@ -89,6 +124,7 @@
       opts.heads = elements.heads.value;
     }
     if (!opts.useAscii) {
+      opts.colorMode = "always";
       for (const axis of BOX_PADDING_AXES) {
         const value = parseInt(elements[axis].value, 10);
         if (!Number.isNaN(value)) opts[axis] = value;
@@ -300,7 +336,7 @@
       return;
     }
     const text = (payload && payload.text) || "";
-    updateOutput(text, false);
+    updateOutput(text, false, state.lastDispatchExtended);
     setStatus("Render complete.", "success");
     syncURLFromForm();
   }
@@ -484,6 +520,7 @@
 
     const mermaid = elements.input.value;
     const options = getOptions();
+    state.lastDispatchExtended = !options.useAscii;
 
     if (state.useWorker && state.workerReady && state.worker) {
       const requestId = ++state.lastDispatchId;

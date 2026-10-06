@@ -250,6 +250,34 @@ self-loop, and spaced-label cases. ASCII snapshots remain byte-for-byte unchange
 These checks cover the reported repros; they do not establish correctness for
 every possible graph or remove the existing limits on available ports.
 
+## Unicode color support (2026-10-05)
+
+`classDef` label and border colors and `linkStyle` edge/label colors are resolved
+separately from glyph composition. Node attachment cells retain the box border's
+color, including an unstyled box's default color. External stems and arrowheads
+use the edge stroke. At edge crossings, the last composed stroke/head owns the
+color. Group frames and titles retain the default color. Source edge indices are
+preserved across the renderer's internal grouping by parent node.
+
+Hex colors (`#rgb` and `#rrggbb`), default and multiple edge selectors, declaration
+order, tabs/spaces, semicolon terminators, standalone styled nodes, and invalid
+selectors/colors have regression coverage. Color modes (`auto`, `always`,
+`never`) preserve terminal detection by default and allow deterministic ANSI or
+plain output. ASCII retains its prior renderer, color behavior, and parsing;
+the new `linkStyle` syntax applies only to extended mode.
+
+The demo requests forced ANSI for extended output and converts only generated
+truecolor/reset sequences to text spans using DOM APIs. It does not interpret
+diagram text as HTML. Copy/download use the resulting plain text. Unit and worker
+checks cover Unicode labels, compact/default boxes, uniform gaps, border/edge
+ownership, and unchanged glyphs after stripping color. Demo tests cover safe
+span creation, literal markup text, plain export, errors, and ASCII isolation.
+Response styling uses the mode captured at dispatch, covering a toggle made
+before a pending colored response arrives. Eight demo tests and both built-WASM
+worker checks pass locally, including the actual colored example. The local demo
+serves the updated files on port 5174. Interactive inspection remains unverified:
+the in-app browser is unavailable and the connected-browser inventory is empty.
+
 ## Earlier validation (2026-10-03)
 
 `go test ./... -count=1`, `go vet ./...`, standard-Go WASM builds, and TinyGo 0.39.0
