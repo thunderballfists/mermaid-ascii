@@ -30,6 +30,9 @@ make mermaid-ascii
 Run Go unit tests with `go test ./...` and demo control tests with
 `node --test automation/site.test.cjs`. `make test` runs both (Node 18+ required).
 
+Rounded nodes such as `A(Start)` render with `╭ ╮ ╰ ╯` corners in extended
+output, preserving the same padding and arrow attachment rules as rectangles.
+
 ## Installation
 
 You can download the binary from Github releases:
