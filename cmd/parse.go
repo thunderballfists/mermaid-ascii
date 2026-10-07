@@ -325,6 +325,7 @@ var shapeDelimiters = []shapeDelimiter{
 	{open: "(((", close: ")))", shape: ShapeDoubleCircle},
 	{open: "((", close: "))", shape: ShapeCircle},
 	{open: "[[", close: "]]", shape: ShapeSubroutine},
+	{open: "[(", close: ")]", shape: ShapeCylinder},
 	{open: "{{", close: "}}", shape: ShapeHexagon},
 	{open: "[/", close: "/]", shape: ShapeParallelogramRight},
 	{open: "[\\", close: "\\]", shape: ShapeParallelogramLeft},
@@ -434,6 +435,10 @@ func isDelimiterStart(r rune) bool {
 func parseShapeAndLabel(remainder string) (Shape, string, string, bool) {
 	trimmed := strings.TrimSpace(remainder)
 	for _, spec := range shapeDelimiters {
+		// Preserve legacy ASCII parsing, including literal cylinder parentheses.
+		if useAscii && spec.shape == ShapeCylinder {
+			continue
+		}
 		if strings.HasPrefix(trimmed, spec.open) {
 			shape := spec.shape
 			if useAscii && shape == ShapeStadium {

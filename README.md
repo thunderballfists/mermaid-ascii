@@ -35,7 +35,9 @@ output, preserving the same padding and arrow attachment rules as rectangles.
 Subroutines such as `A[[Run]]` add inset vertical borders; padding applies to
 the label area between those borders, and `stroke` colors the complete frame.
 Stadium nodes such as `A([Start])` use rounded corners and parenthesized end caps
-as a compact text approximation. These shapes apply only to extended output;
+as a compact text approximation. Database cylinders (`A[(DB)]`) add a rounded
+outline and a lid rim, requiring one extra row independently of label padding.
+These shapes apply only to extended output;
 ASCII retains its existing rectangle rendering and parsing.
 
 ## Installation
@@ -497,8 +499,8 @@ The baseline components for Mermaid work, but there are a lot of things that are
 - [x] `A & B`
 - [x] Multiple arrows on one line (like `A --> B --> C`)
 - [x] `subgraph` (including nested groups)
-- [x] Extended rectangles, rounded rectangles, stadiums, and subroutines
-- [ ] Other node shapes, including diamonds, circles, and cylinders
+- [x] Extended rectangles, rounded rectangles, stadiums, subroutines, and cylinders
+- [ ] Other node shapes, including diamonds and circles
 - [ ] Whitespacing and comments
 
 ### Rendering

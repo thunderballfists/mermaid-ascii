@@ -57,6 +57,9 @@ func (g *graph) setColumnWidth(n *node) {
 	col3 := 1
 	colsToBePlaced := []int{col1, col2, col3}
 	rowsToBePlaced := []int{1, 1 + 2*boxPaddingY, 1} // Border, padding + line, border
+	if !useAscii && n.shape == ShapeCylinder {
+		rowsToBePlaced[1]++ // The lid rim is separate from label padding.
+	}
 
 	for idx, col := range colsToBePlaced {
 		// Set new width for column if the size increased

@@ -16,6 +16,7 @@ const (
 	ShapeTrapezoidLeft
 	ShapeSubroutine
 	ShapeStadium
+	ShapeCylinder
 )
 
 func defaultShape() Shape {

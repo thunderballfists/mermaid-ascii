@@ -11,6 +11,8 @@
 - Stadium nodes (`A([label])`) with rounded corners and parenthesized end caps,
   distinct from rounded rectangles without increasing their minimum height.
 - A demo example combining stadium, subroutine, and rounded nodes.
+- Database cylinders (`A[(label)]`) in extended output with a rounded outline,
+  a separately colored lid rim, and one extra row independent of label padding.
 - Extended-mode border and edge colors: `classDef` label/border colors and
   source-indexed or default `linkStyle` stroke/label colors. Border attachments
   retain box colors; color composition does not change layout or glyphs.

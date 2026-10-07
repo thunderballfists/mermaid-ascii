@@ -181,7 +181,7 @@ func drawBox(n *node, g graph) *drawing {
 	log.Debug("Drawing box from ", from, " to ", to)
 	if !useAscii {
 		opts := defaultFlowOptions()
-		opts.CurvedCorners = n.shape == ShapeRoundedRectangle || n.shape == ShapeStadium
+		opts.CurvedCorners = n.shape == ShapeRoundedRectangle || n.shape == ShapeStadium || n.shape == ShapeCylinder
 		pal := buildPalette(opts)
 		// Draw top border
 		for x := from.x + 1; x < to.x; x++ {
@@ -230,6 +230,9 @@ func drawBox(n *node, g graph) *drawing {
 	}
 	// Draw text
 	textY := from.y + h/2
+	if !useAscii && n.shape == ShapeCylinder {
+		textY = CeilDiv(h, 2)
+	}
 	labelWidth := textWidth(n.label)
 	if !useAscii {
 		labelWidth = Max(1, labelWidth)

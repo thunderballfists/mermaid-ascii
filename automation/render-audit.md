@@ -300,7 +300,9 @@ attachment characters in the Unicode snapshots changed; ASCII goldens did not.
 ## First native node shapes (2026-10-06)
 
 Extended output now draws rounded rectangles (`A(label)`), stadiums
-(`A([label])`), and subroutines (`A[[label]]`). Stadiums use parenthesized end
+(`A([label])`), subroutines (`A[[label]]`), and cylinders (`A[(label)]`).
+Cylinders use a rounded frame and lid rim, adding one row independent of label
+padding; the rim retains the node stroke color. Stadiums use parenthesized end
 caps as a compact text approximation; they have a distinct shape type.
 Subroutine dividers reserve four columns independently of label padding and
 share the node border color. These shapes keep rectangular bounds and cardinal
