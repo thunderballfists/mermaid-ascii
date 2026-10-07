@@ -53,12 +53,19 @@ func (g *graph) setColumnWidth(n *node) {
 		if n.shape == ShapeSubroutine {
 			col2 += 4
 		}
+		if n.shape == ShapeDiamond {
+			// Fit the padded label inside sloping sides, keeping a shallow outline.
+			col2 = 2*CeilDiv((col2+1)*(boxPaddingY+2), 2) - 1
+		}
 	}
 	col3 := 1
 	colsToBePlaced := []int{col1, col2, col3}
 	rowsToBePlaced := []int{1, 1 + 2*boxPaddingY, 1} // Border, padding + line, border
 	if !useAscii && n.shape == ShapeCylinder {
 		rowsToBePlaced[1]++ // The lid rim is separate from label padding.
+	}
+	if !useAscii && n.shape == ShapeDiamond {
+		rowsToBePlaced[1] = 2*(boxPaddingY+2) - 1
 	}
 
 	for idx, col := range colsToBePlaced {

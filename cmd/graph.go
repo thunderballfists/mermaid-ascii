@@ -344,6 +344,7 @@ func (g *graph) createMapping() {
 		g.reserveArrowHeadClearance(e)
 		g.determineLabelLine(e)
 	}
+	g.normalizeDiamondBands()
 	g.equalizeNodeGaps()
 
 	// ! Last point before we manipulate the drawing !

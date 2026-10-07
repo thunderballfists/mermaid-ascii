@@ -238,6 +238,9 @@ func drawBox(n *node, g graph) *drawing {
 		labelWidth = Max(1, labelWidth)
 	}
 	textX := from.x + w/2 - CeilDiv(labelWidth, 2) + 1
+	if !useAscii && n.shape == ShapeDiamond {
+		textX = CeilDiv(w-labelWidth, 2)
+	}
 	if !useAscii {
 		boxDrawing.drawUnicodeText(drawingCoord{textX, textY}, n.label, to.x-textX, normalizeColor(n.styleClass.styles["color"]), g.styleType)
 	} else {

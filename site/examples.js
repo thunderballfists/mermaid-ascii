@@ -2,7 +2,7 @@ window.MERMAID_ASCII_EXAMPLES = [
   {
     id: "node-shapes",
     name: "Node Shapes (extended mode)",
-    mermaid: "graph LR\nStart([Start]) --> Run[[Run]] --> Finish(Done)",
+    mermaid: "graph LR\nStart([Start]) --> Check{Ready?} --> Run[[Run]] --> DB[(DB)] --> Finish(Done)",
   },
   {
     id: "colored-flow",

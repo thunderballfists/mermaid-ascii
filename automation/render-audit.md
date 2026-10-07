@@ -305,8 +305,12 @@ Cylinders use a rounded frame and lid rim, adding one row independent of label
 padding; the rim retains the node stroke color. Stadiums use parenthesized end
 caps as a compact text approximation; they have a distinct shape type.
 Subroutine dividers reserve four columns independently of label padding and
-share the node border color. These shapes keep rectangular bounds and cardinal
-ports; other shapes still render as rectangles. Modern `@{ shape: ... }`
+share the node border color. Diamonds (`A{label}`) use stepped diagonal strokes
+and four tips aligned with cardinal ports. They reserve space for label padding
+inside the outline, with a five-row minimum; long labels increase width.
+Shared-band normalization keeps the outline connected and the tips aligned.
+All supported shapes keep rectangular routing bounds. Other shapes still render
+as rectangles. Modern `@{ shape: ... }`
 declarations are not supported yet.
 
 A preceding parser repair preserves closing `)` delimiters next to unspaced

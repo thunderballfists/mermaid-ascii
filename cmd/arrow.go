@@ -221,8 +221,8 @@ func (g *graph) drawBoxStart(e *edge, firstLine []drawingCoord) *drawing {
 	dir := determineDirection(genericCoord(e.path[0]), genericCoord(e.path[1]))
 	log.Debugf("Drawing box start at %v with direction %v for line %v", from, dir, e.path)
 
-	if useAscii {
-		return &d
+	if useAscii || (e.from != nil && e.from.shape == ShapeDiamond) {
+		return &d // Diamond tips do not use rectangular tees.
 	}
 
 	pal := buildPalette(e.flowOptions())

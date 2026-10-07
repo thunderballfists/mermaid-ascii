@@ -37,6 +37,9 @@ the label area between those borders, and `stroke` colors the complete frame.
 Stadium nodes such as `A([Start])` use rounded corners and parenthesized end caps
 as a compact text approximation. Database cylinders (`A[(DB)]`) add a rounded
 outline and a lid rim, requiring one extra row independently of label padding.
+Diamonds (`A{Ready?}`) use four tips and stepped diagonal sides; compact output
+needs at least five rows. Their width fits the label and its padding inside the
+sloping outline. Arrows meet the tips, and the entire outline uses node `stroke`.
 These shapes apply only to extended output;
 ASCII retains its existing rectangle rendering and parsing.
 
@@ -499,8 +502,8 @@ The baseline components for Mermaid work, but there are a lot of things that are
 - [x] `A & B`
 - [x] Multiple arrows on one line (like `A --> B --> C`)
 - [x] `subgraph` (including nested groups)
-- [x] Extended rectangles, rounded rectangles, stadiums, subroutines, and cylinders
-- [ ] Other node shapes, including diamonds and circles
+- [x] Extended rectangles, rounded rectangles, stadiums, subroutines, cylinders, and diamonds
+- [ ] Other node shapes, including circles and hexagons
 - [ ] Whitespacing and comments
 
 ### Rendering

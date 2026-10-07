@@ -44,6 +44,11 @@ async function render(source, options = {}) {
   assert.equal((await render("graph LR\nA[[Run]]", { boxPaddingY: 0 })).text, "┌─┬─────┬─┐\n│ │ Run │ │\n└─┴─────┴─┘");
   assert.equal((await render("graph LR\nA([Start])", { boxPaddingY: 0 })).text, "╭───────╮\n( Start )\n╰───────╯");
   assert.equal((await render("graph LR\nA[(DB)]", { boxPaddingY: 0 })).text, "╭────╮\n├────┤\n│ DB │\n╰────╯");
+  assert.equal((await render("graph LR\nA{Yes}", { boxPaddingX: 0, boxPaddingY: 0 })).text, "    ∧    \n  ╱─ ─╲  \n<─ Yes ─>\n  ╲─ ─╱  \n    ∨    ");
+  const diamondCycle = await render("graph TD\nA{A}-->B\nB-->C{C}\nC-->|x|A", { boxPaddingX: 0, boxPaddingY: 0 });
+  assert.equal(diamondCycle.type, "result");
+  assert.ok(diamondCycle.text.includes("< A >◄"));
+  assert.ok(diamondCycle.text.includes("< C >─"));
   assert.equal((await render("graph LR\nA", { boxPaddingX: 0, boxPaddingY: 0 })).text, "┌─┐\n│A│\n└─┘");
   assert.equal((await render("graph LR\nA[東京]", { boxPaddingX: 0, boxPaddingY: 0 })).text, "┌────┐\n│東京│\n└────┘");
   assert.equal((await render("graph LR\nA", { boxPaddingX: 3, boxPaddingY: 0 })).text, "┌───────┐\n│   A   │\n└───────┘");
@@ -126,7 +131,10 @@ async function render(source, options = {}) {
   assert.ok(shapeResult.text.includes("( Start ├"));
   assert.ok(shapeResult.text.includes("│ │ Run │ ├"));
   assert.ok(shapeResult.text.includes("│ Done │"));
-  assert.equal((shapeResult.text.match(/►/g) || []).length, 2);
+  assert.ok(shapeResult.text.includes("Ready?"));
+  assert.ok(shapeResult.text.includes("∧"));
+  assert.ok(shapeResult.text.includes("├────┤"));
+  assert.equal((shapeResult.text.match(/►/g) || []).length, 4);
   assert.ok(colorExample);
   const exampleResult = await render(colorExample.mermaid, { colorMode: "always", boxPaddingY: 0 });
   assert.equal(exampleResult.type, "result");

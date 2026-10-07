@@ -10,9 +10,12 @@
   of those borders, and matching border colors.
 - Stadium nodes (`A([label])`) with rounded corners and parenthesized end caps,
   distinct from rounded rectangles without increasing their minimum height.
-- A demo example combining stadium, subroutine, and rounded nodes.
+- A demo example combining stadium, diamond, subroutine, cylinder, and rounded nodes.
 - Database cylinders (`A[(label)]`) in extended output with a rounded outline,
-  a separately colored lid rim, and one extra row independent of label padding.
+  a lid rim using the node stroke color, and one extra row independent of label padding.
+- Diamond nodes (`A{label}`) with stepped diagonal outlines, four cardinal tips,
+  label-aware sizing, and border colors in extended output. Compact diamonds
+  require five rows; label length increases width without increasing height.
 - Extended-mode border and edge colors: `classDef` label/border colors and
   source-indexed or default `linkStyle` stroke/label colors. Border attachments
   retain box colors; color composition does not change layout or glyphs.
